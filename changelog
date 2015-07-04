@@ -1,3 +1,10 @@
+mcpdisp (0.0.3) UNRELEASED; urgency=medium
+
+  * Increase buffer for text x4
+  * Removed buffer full warnings for now.
+
+ -- Len Ovens <len@music>  Sat, 04 Jul 2015 12:32:48 -0700
+
 mcpdisp (0.0.2) RELEASED; urgency=medium
 
   * Added fflush so we don't use repeating prinfs to flush

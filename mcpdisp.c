@@ -43,11 +43,13 @@ int process(jack_nframes_t nframes, void *arg)
                     {
                       int written = jack_ringbuffer_write( textbuffer, (const char*) (in_event.buffer + 6), 8 );
                       if (written != 8 ) {
-                        printf("ERROR! Partial textbuffer write");
+                        /* only for debug
+                        printf("ERROR! Partial textbuffer write");*/
                       }
                     }
                     else {
-                      printf("textbuffer full skipping");
+                      /* only for debug
+                      printf("textbuffer full skipping");*/
 
                   }
                 }
@@ -62,11 +64,14 @@ int process(jack_nframes_t nframes, void *arg)
                     {
                       int written = jack_ringbuffer_write( ledbuffer, (const char*) (in_event.buffer + 1), 2 );
                       if (written != 2 ) {
-                        printf("ERROR! Partial textbuffer write");
+                        /* only use this for debug
+                        printf("ERROR! Partial textbuffer write"); */
                       }
                     }
                     else {
-                      printf("textbuffer full skipping");
+                      /* there is no real reason to mess up our display with this text
+                        unless we are debugging
+                      printf("textbuffer full skipping"); */
 
                   }
                 }
@@ -77,6 +82,7 @@ int process(jack_nframes_t nframes, void *arg)
 
     return 0;      
 }
+
 
 /* Allow SIGTERM to cause graceful termination */
 /* I don't know which of these are actually needed, but it ends nice */
@@ -91,8 +97,6 @@ void on_term(int signum) {
     return;
 }
     
-
-
 void jack_shutdown(void *arg)
 {
     exit(1);
@@ -131,7 +135,7 @@ int main(int narg, char **args)
           }
     
     /* set up display buffer */
-    textbuffer = jack_ringbuffer_create( 1024 );
+    textbuffer = jack_ringbuffer_create( 4096 );
     res = jack_ringbuffer_mlock(textbuffer);
     if ( res ) {
         printf("Error locking text memory!");
@@ -176,7 +180,9 @@ int main(int narg, char **args)
           {
             int textres = jack_ringbuffer_read(textbuffer, (char*)textbit, 8 );
             if ( textres != 8 ) {
-                printf("WARNING! didn't read full event!/n");
+                /* this should not happen as we don't try to write
+                to ring buff if there is not 8 bytes of space */
+                printf("\n\nWARNING! didn't read full event!\n");
                 return -1;
             }
             texoff = textbit[0]+1;
