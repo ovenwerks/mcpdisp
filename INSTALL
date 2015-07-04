@@ -1,0 +1,20 @@
+Instalation instructions:
+
+There is no ./configure script as this is a simple program with few
+dependencies. If your system is set up to build things at all you have
+everything needed with the exception of libjack. There is probably a package
+called libjack-dev (if you are using jackd1) or libjack-jackd2-dev (if you
+are using jackd2 or jackdbus) in your distro you will need.
+
+So:
+
+make
+
+At this point you may wish to try ./mcpdisp.sh to see if you like where it
+starts. The default is -0-0 or the lower right corner. I like +2000-1 which
+puts the display about 1/3 of the way from the left of my right screen, but
+this is not good if you have only one screen. Feel free to edit mcpdisp.sh
+before you do:
+
+make install (as root with su or sudo)
+

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=mcpdisp
+GenericName=mcpdisp
+Comment=Mackie Control Surface Emulator
+Icon=mcpdisp
+Exec=mcpdisp.sh
+Terminal=false
+Categories=AudioVideo;Audio;Midi;

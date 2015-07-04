@@ -1,0 +1,17 @@
+mcpdisp (0.0.2) RELEASED; urgency=medium
+
+  * Added fflush so we don't use repeating prinfs to flush
+  * Added command to park cursor in lower right corner
+  * Hide cursor!
+  * Set application to start in the lower right screen corner
+  * Control C now exits gracefully
+  * Added changelog
+  * Window close (X) closes jack port properly
+
+ -- Len Ovens <len@music>  Mon, 11 May 2015 15:16:36 -0700
+
+mcpdisp (0.0.1) RELEASED; urgency=medium
+
+  * Initial release
+
+ -- Len Ovens <len@music>  Sat, 09 May 2015 13:11:24 -0700
