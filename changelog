@@ -2,6 +2,7 @@ mcpdisp (0.0.3) UNRELEASED; urgency=medium
 
   * Increase buffer for text x4
   * Removed buffer full warnings for now.
+  * Put a description in the README file.
 
  -- Len Ovens <len@music>  Sat, 04 Jul 2015 12:32:48 -0700
 
