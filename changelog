@@ -1,4 +1,4 @@
-mcpdisp (0.0.3) trusty; urgency=medium
+mcpdisp (0.0.3) released; urgency=medium
 
   * Increase buffer for text x4
   * Removed buffer full warnings for now.
