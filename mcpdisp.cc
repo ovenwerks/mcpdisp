@@ -1,14 +1,32 @@
-#include <stdio.h>
-#include <errno.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
+/*
+ * Copyright (C) 2015 Len Ovens
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA 02110-1301, USA.
+ *
+ */
 
+#include <unistd.h>
+#include <signal.h>
+#include <iostream>
 
 #include <jack/jack.h>
 #include <jack/midiport.h>
 #include <jack/ringbuffer.h>
+
+using namespace std;
 
 
 jack_client_t *client;
@@ -23,7 +41,7 @@ jack_ringbuffer_t *textbuffer = 0;
 
 int process(jack_nframes_t nframes, void *arg)
 {
-    int i;
+    uint i;
     void* port_buf = jack_port_get_buffer(input_port, nframes);
     jack_midi_event_t in_event;
     jack_nframes_t event_count = jack_midi_get_event_count(port_buf);
@@ -80,7 +98,7 @@ int process(jack_nframes_t nframes, void *arg)
     }
 
 
-    return 0;      
+    return 0;
 }
 
 
@@ -91,35 +109,36 @@ void on_term(int signum) {
     jack_deactivate(client);
     jack_ringbuffer_free(ledbuffer);
     jack_ringbuffer_free(textbuffer);
-    jack_client_close(client);  
+    jack_client_close(client);
     exit(0);
 
     return;
 }
-    
+
 void jack_shutdown(void *arg)
 {
     exit(1);
 }
 
-int main(int narg, char **args)
+int main(int argc, char** argv)
+//int main()
 {
     char on;
     int c;
     char textbit[9];
     int texoff;
-
+	char esc = 0x1b;
 
     if ((client = jack_client_open ("mcpdisp", JackNullOption, NULL)) == 0)
     {
-        fprintf(stderr, "jack server not running?\n");
+		std::cout << "Jack server not running?" << std::endl;
         return 1;
     }
 
-    
+
     jack_set_process_callback (client, process, 0);
 
-    
+
 
     jack_on_shutdown (client, jack_shutdown, 0);
 
@@ -130,41 +149,38 @@ int main(int narg, char **args)
     ledbuffer = jack_ringbuffer_create( 1024 );
     int res = jack_ringbuffer_mlock(ledbuffer);
     if ( res ) {
-        printf("Error locking LED memory!\n");
+		std::cout << "Error locking LED memory!\n";
         return -1;
           }
-    
+
     /* set up display buffer */
     textbuffer = jack_ringbuffer_create( 4096 );
     res = jack_ringbuffer_mlock(textbuffer);
     if ( res ) {
-        printf("Error locking text memory!");
+		std::cout << "Error locking text memory!\n";
         return -1;
           }
 
 
     if (jack_activate (client))
     {
-        fprintf(stderr, "cannot activate client");
+		std::cout << "Error cannot activate client\n";
         return 1;
     }
 
-    /* try to end nice on anything 
+    /* try to end nice on anything
     - one of these makes window close work */
-    signal(SIGTERM, on_term);    
-    signal(SIGINT, on_term);    
-    signal(SIGPIPE, on_term);    
-    signal(SIGHUP, on_term);    
-    signal(SIGQUIT, on_term);    
-    signal(SIGKILL, on_term);    
-    signal(SIGABRT, on_term);    
+    signal(SIGTERM, on_term);
+    signal(SIGINT, on_term);
+    signal(SIGPIPE, on_term);
+    signal(SIGHUP, on_term);
+    signal(SIGQUIT, on_term);
+    signal(SIGKILL, on_term);
+    signal(SIGABRT, on_term);
 
-
-    /* clear screen, park the cursor and hide it. Then flush */
-    printf("%c[2J", 0x1b);
-    printf("%c[3;56H%c[?25l", 0x1b, 0x1b);
-    fflush(stdout);
-
+	/* clear screen, park the cursor and hide it. Then flush */
+	std::cout << esc << "[3;56H" << esc << "[?25l";
+	cout.flush();
 
     /* run until interrupted */
     while(1)
@@ -173,98 +189,95 @@ int main(int narg, char **args)
         /* first do text fields */
         int availableRead = jack_ringbuffer_read_space(textbuffer);
         if( availableRead >= 8 )
-        {
-          textbit[8] = '\x00';
-          int lp = availableRead / 8;
-          for(c=0; c<lp; c++)
-          {
-            int textres = jack_ringbuffer_read(textbuffer, (char*)textbit, 8 );
-            if ( textres != 8 ) {
-                /* this should not happen as we don't try to write
-                to ring buff if there is not 8 bytes of space */
-                printf("\n\nWARNING! didn't read full event!\n");
-                return -1;
-            }
-            texoff = textbit[0]+1;
-            /* top row */
-            if(texoff < 56)
-            {
-              printf("%c[1;%dH%c[1;37m%s", 0x1b, texoff, 0x1b, &textbit[1] );
-            }
-            else
-            {
-              /* bottom row */
-              texoff = texoff - 56;
-              printf("%c[2;%dH%c[1;37m%s", 0x1b, texoff, 0x1b, &textbit[1] );
-            }
-          }
-          /* park the cursor and hide it, then flush */
-          printf("%c[3;56H%c[?25l", 0x1b, 0x1b);
-          fflush(stdout);
+		{
+			textbit[8] = '\x00';
+			int lp = availableRead / 8;
+			for(c=0; c<lp; c++)
+			{
+				int textres = jack_ringbuffer_read(textbuffer, (char*)textbit, 8 );
+				if ( textres != 8 ) {
+					/* this should not happen as we don't try to write
+					to ring buff if there is not 8 bytes of space */
+					std::cout << "\n\nWARNING! didn't read full event!\n";
+					return -1;
+				}
+				texoff = textbit[0]+1;
+				/* top row */
+				if(texoff < 56)
+				{
+					std::cout << esc << "[1;" << texoff << "H" << esc << "[1;37m" << &textbit[1];
+				}
+				else
+				{
+					/* bottom row */
+					texoff = texoff - 56;
+					std::cout << esc << "[2;" << texoff << "H" << esc << "[1;37m" << &textbit[1];
+				}
+			}
+			/* park the cursor and hide it, then flush */
+			std::cout << esc << "[3;56H" << esc << "[?25l";
+			cout.flush();
         }
-        
+
         /* now display "Lamps" */
         availableRead = jack_ringbuffer_read_space(ledbuffer);
         if( availableRead >= 2 )
-        { 
+        {
           int lp = availableRead / 2;
           for(c=0; c<lp; c++)
           {
             int ledres = jack_ringbuffer_read(ledbuffer, (char*)textbit, 2 );
             if ( ledres != 2 ) {
-                printf("WARNING! didn't read full event!/n");
-                return -1;
+				std::cout << "WARNING! didn't read full event!/n";
+				return -1;
             }
             /* Lamps 0 - 7 are Record enable */
             if( textbit[0] < 8 )
             {
-              texoff = (textbit[0] * 7) +2;
-              if (textbit[1] == 0) {
-                  on = ' ';
-              } else {
-                  on = 'R';
-              }
-              printf ("%c[3;%dH%c[1;31m%c", 0x1b, texoff, 0x1b, on);
-            } else if ( textbit[0] < 16 )
-            {
-              /* Lamps 8 - 15 are PFL (Solo?) buttons */
-              texoff = ((textbit[0] - 8) * 7) +3;
-              if (textbit[1] == 0) {
-                  on = ' ';
-              } else {
-                  on = 'P';
-              }
-              printf ("%c[3;%dH%c[1;32m%c", 0x1b, texoff, 0x1b, on);
-            } else if ( textbit[0] < 24 )
-            {
-              /* Lamps 16 - 23 are Mute buttons */
-              texoff = ((textbit[0] - 16) * 7) +4;
-              if (textbit[1] == 0) {
-                  on = ' ';
-              } else {
-                  on = 'M';
-              }
-              printf ("%c[3;%dH%c[1;33m%c", 0x1b, texoff, 0x1b, on);
-            } else if ( textbit[0] < 32 )
-            {
-              /* Lamps 24 - 31 are channel select indicators */
-              texoff = ((textbit[0] - 24) * 7) +1;
-              if (textbit[1] == 0) {
-                  on = ' ';
-              } else {
-                  on = 'S';
-              }
-              printf ("%c[3;%dH%c[1;37m%c", 0x1b, texoff, 0x1b, on);
-              }
-            }  
-            /* park cursor, hide it and flush buffer */
-            printf("%c[3;56H%c[?25l", 0x1b, 0x1b);
-            fflush(stdout);
+				texoff = (textbit[0] * 7) +2;
+				if (textbit[1] == 0) {
+					on = ' ';
+				} else {
+					on = 'R';
+				}
+				std::cout << esc << "[3;" << texoff << "H" << esc << "[1;31m" << on;
+            } else if ( textbit[0] < 16 ) {
+				/* Lamps 8 - 15 are PFL (Solo?) buttons */
+				texoff = ((textbit[0] - 8) * 7) +3;
+				if (textbit[1] == 0) {
+					on = ' ';
+				} else {
+					on = 'P';
+				}
+				std::cout << esc << "[3;" << texoff << "H" << esc << "[1;32m" << on;
+            } else if ( textbit[0] < 24 ) {
+				/* Lamps 16 - 23 are Mute buttons */
+				texoff = ((textbit[0] - 16) * 7) +4;
+				if (textbit[1] == 0) {
+					on = ' ';
+				} else {
+					on = 'M';
+				}
+				std::cout << esc << "[3;" << texoff << "H" << esc << "[1;33m" << on;
+            } else if ( textbit[0] < 32 ) {
+				/* Lamps 24 - 31 are channel select indicators */
+				texoff = ((textbit[0] - 24) * 7) +1;
+				if (textbit[1] == 0) {
+					on = ' ';
+				} else {
+					on = 'S';
+				}
+				std::cout << esc << "[3;" << texoff << "H" << esc << "[1;37m" << on;
+				}
+			}
+			/* park cursor, hide it and flush buffer */
+			std::cout << esc << "[3;56H" << esc << "[?25l";
+			cout.flush();
         }
-    }
-    printf("after while\n");
-    fflush(stdout);
-    sleep(10);
-    jack_client_close(client);
-    exit (0);
+	}
+	std::cout << "after while\n";
+	cout.flush();
+	sleep(10);
+	jack_client_close(client);
+	exit (0);
 }

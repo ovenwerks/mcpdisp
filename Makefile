@@ -16,10 +16,11 @@ bindir := $(prefix)/bin
 # Yes, I am lazy...
 #VER := $(shell head -n 1 NEWS | cut -d : -f 1)
 
-
+LINK.o = $(LINK.cc)
+CXXFLAGS=-Wall -pedantic -std=c++0x
 
 DEBUG :=
-CFLAGS := -O2 -Wall $(DEBUG)
+#CFLAGS := -O2 -Wall $(DEBUG)
 #CPPFLAGS := -DVERSION=\"$(VER)\" -DCONFIG=\"$(sysconfdir)/actkbd.conf\"
 
 
@@ -33,7 +34,7 @@ install: all
 	install -D -m755 mcpdisp.sh $(bindir)/mcpdisp.sh
 	install -D -m644 mcpdisp.desktop $(prefix)/share/applications/mcpdisp.desktop
 	install -D -m644 mcpdisp.svg $(prefix)/share/icons/hicolor/scalable/apps/mcpdisp.svg
-	
+
 
 clean:
 	rm -f mcpdisp *.o
