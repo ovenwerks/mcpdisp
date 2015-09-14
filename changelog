@@ -1,3 +1,9 @@
+mcpdisp (0.0.4) Prerelease
+
+  * Moved from c to c++ to work with GUI.
+
+ -- Len Ovens <len@music>  Sun, 13 Sep 2015 20:01:10 -0700
+
 mcpdisp (0.0.3) released; urgency=medium
 
   * Increase buffer for text x4
