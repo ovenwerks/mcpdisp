@@ -41,159 +41,149 @@ jack_ringbuffer_t *textbuffer = 0;
 
 int process(jack_nframes_t nframes, void *arg)
 {
-    uint i;
-    void* port_buf = jack_port_get_buffer(input_port, nframes);
-    jack_midi_event_t in_event;
-    jack_nframes_t event_count = jack_midi_get_event_count(port_buf);
-    if(event_count > 0)
-    {
-        for(i=0; i<event_count; i++)
-        {
-            jack_midi_event_get(&in_event, port_buf, i);
-            /* The events we need are keyon 0-31, and sysexec */
-            if( (*(in_event.buffer)) == 0xf0 )
-            {
-                /* sysex, looking for display info */
-                if( (*(in_event.buffer + 5)) == 0x12)
-                {
-                    int availableWrite = jack_ringbuffer_write_space(textbuffer);
-                    if (availableWrite >= 8)
-                    {
-                      int written = jack_ringbuffer_write( textbuffer, (const char*) (in_event.buffer + 6), 8 );
-                      if (written != 8 ) {
-                        /* only for debug
-                        printf("ERROR! Partial textbuffer write");*/
-                      }
-                    }
-                    else {
-                      /* only for debug
-                      printf("textbuffer full skipping");*/
+	uint i;
+	void* port_buf = jack_port_get_buffer(input_port, nframes);
+	jack_midi_event_t in_event;
+	jack_nframes_t event_count = jack_midi_get_event_count(port_buf);
+	if(event_count > 0)
+	{
+		for(i=0; i<event_count; i++)
+		{
+			jack_midi_event_get(&in_event, port_buf, i);
+			/* The events we need are keyon 0-31, and sysexec */
+			if( (*(in_event.buffer)) == 0xf0 )
+			{
+				/* sysex, looking for display info */
+				if( (*(in_event.buffer + 5)) == 0x12)
+				{
+					int availableWrite = jack_ringbuffer_write_space(textbuffer);
+					if (availableWrite >= 8) {
+						int written = jack_ringbuffer_write( textbuffer, (const char*) (in_event.buffer + 6), 8 );
+						if (written != 8 ) {
+							/* only for debug
+							printf("ERROR! Partial textbuffer write");*/
+						}
+					} else {
+					/* only for debug
+						printf("textbuffer full skipping");*/
 
-                  }
-                }
-            }
-            else if( (*(in_event.buffer)) == 0x90 )
-            {
-                /* button press LED returns */
-                if ((*(in_event.buffer+1)) < 32)
-                {
-                    int availableWrite = jack_ringbuffer_write_space(ledbuffer);
-                    if (availableWrite >= 2)
-                    {
-                      int written = jack_ringbuffer_write( ledbuffer, (const char*) (in_event.buffer + 1), 2 );
-                      if (written != 2 ) {
-                        /* only use this for debug
-                        printf("ERROR! Partial textbuffer write"); */
-                      }
-                    }
-                    else {
-                      /* there is no real reason to mess up our display with this text
-                        unless we are debugging
-                      printf("textbuffer full skipping"); */
+					}
+				}
+			}
+			else if( (*(in_event.buffer)) == 0x90 ) {
+				/* button press LED returns */
+				if ((*(in_event.buffer+1)) < 32)
+				{
+					int availableWrite = jack_ringbuffer_write_space(ledbuffer);
+					if (availableWrite >= 2)
+					{
+						int written = jack_ringbuffer_write( ledbuffer, (const char*) (in_event.buffer + 1), 2 );
+						if (written != 2 ) {
+							/* only use this for debug
+							printf("ERROR! Partial textbuffer write"); */
+						}
+					} else {
+						/* there is no real reason to mess up our display with this text
+						 * unless we are debugging */
+						// printf("textbuffer full skipping");
 
-                  }
-                }
-            }
-        }
-    }
+					}
+				}
+			}
+		}
+	}
 
 
-    return 0;
+	return 0;
 }
 
 
 /* Allow SIGTERM to cause graceful termination */
 /* I don't know which of these are actually needed, but it ends nice */
 void on_term(int signum) {
-    jack_port_unregister(client, input_port);
-    jack_deactivate(client);
-    jack_ringbuffer_free(ledbuffer);
-    jack_ringbuffer_free(textbuffer);
-    jack_client_close(client);
-    exit(0);
+	jack_port_unregister(client, input_port);
+	jack_deactivate(client);
+	jack_ringbuffer_free(ledbuffer);
+	jack_ringbuffer_free(textbuffer);
+	jack_client_close(client);
+	exit(0);
 
-    return;
+	return;
 }
 
 void jack_shutdown(void *arg)
 {
-    exit(1);
+	exit(1);
 }
 
 int main(int argc, char** argv)
 //int main()
 {
-    char on;
-    int c;
-    char textbit[9];
-    int texoff;
+	char on;
+	int c;
+	char textbit[9];
+	int texoff;
 	char esc = 0x1b;
 
-    if ((client = jack_client_open ("mcpdisp", JackNullOption, NULL)) == 0)
-    {
+	if ((client = jack_client_open ("mcpdisp", JackNullOption, NULL)) == 0)
+	{
 		std::cout << "Jack server not running?" << std::endl;
-        return 1;
-    }
+		return 1;
+	}
 
+	jack_set_process_callback (client, process, 0);
 
-    jack_set_process_callback (client, process, 0);
+	jack_on_shutdown (client, jack_shutdown, 0);
 
+	input_port = jack_port_register (client, "midi_in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
 
-
-    jack_on_shutdown (client, jack_shutdown, 0);
-
-    input_port = jack_port_register (client, "midi_in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
-
-    /* setup LED buffer - All of these may change at once
-       maybe twice close together. */
-    ledbuffer = jack_ringbuffer_create( 1024 );
-    int res = jack_ringbuffer_mlock(ledbuffer);
-    if ( res ) {
+	/* setup LED buffer - All of these may change at once
+		maybe twice close together. */
+	ledbuffer = jack_ringbuffer_create( 1024 );
+	int res = jack_ringbuffer_mlock(ledbuffer);
+	if ( res ) {
 		std::cout << "Error locking LED memory!\n";
-        return -1;
-          }
+		return -1;
+	}
 
-    /* set up display buffer */
-    textbuffer = jack_ringbuffer_create( 4096 );
-    res = jack_ringbuffer_mlock(textbuffer);
-    if ( res ) {
+	/* set up display buffer */
+	textbuffer = jack_ringbuffer_create( 4096 );
+	res = jack_ringbuffer_mlock(textbuffer);
+	if ( res ) {
 		std::cout << "Error locking text memory!\n";
         return -1;
-          }
+	}
 
 
-    if (jack_activate (client))
-    {
+	if (jack_activate (client)) {
 		std::cout << "Error cannot activate client\n";
-        return 1;
-    }
+		return 1;
+	}
 
-    /* try to end nice on anything
-    - one of these makes window close work */
-    signal(SIGTERM, on_term);
-    signal(SIGINT, on_term);
-    signal(SIGPIPE, on_term);
-    signal(SIGHUP, on_term);
-    signal(SIGQUIT, on_term);
-    signal(SIGKILL, on_term);
-    signal(SIGABRT, on_term);
+	/* try to end nice on anything
+		one of these makes window close work */
+	signal(SIGTERM, on_term);
+	signal(SIGINT, on_term);
+	signal(SIGPIPE, on_term);
+	signal(SIGHUP, on_term);
+	signal(SIGQUIT, on_term);
+	signal(SIGKILL, on_term);
+	signal(SIGABRT, on_term);
 
 	/* clear screen, park the cursor and hide it. Then flush */
 	std::cout << esc << "[3;56H" << esc << "[?25l";
 	cout.flush();
 
-    /* run until interrupted */
-    while(1)
-    {
-        usleep(1000);
-        /* first do text fields */
-        int availableRead = jack_ringbuffer_read_space(textbuffer);
-        if( availableRead >= 8 )
-		{
+	/* run until interrupted */
+	while(1)
+	{
+		usleep(1000);
+		/* first do text fields */
+		int availableRead = jack_ringbuffer_read_space(textbuffer);
+		if( availableRead >= 8 ) {
 			textbit[8] = '\x00';
 			int lp = availableRead / 8;
-			for(c=0; c<lp; c++)
-			{
+			for(c=0; c<lp; c++) {
 				int textres = jack_ringbuffer_read(textbuffer, (char*)textbit, 8 );
 				if ( textres != 8 ) {
 					/* this should not happen as we don't try to write
@@ -203,12 +193,9 @@ int main(int argc, char** argv)
 				}
 				texoff = textbit[0]+1;
 				/* top row */
-				if(texoff < 56)
-				{
+				if(texoff < 56) {
 					std::cout << esc << "[1;" << texoff << "H" << esc << "[1;37m" << &textbit[1];
-				}
-				else
-				{
+				} else {
 					/* bottom row */
 					texoff = texoff - 56;
 					std::cout << esc << "[2;" << texoff << "H" << esc << "[1;37m" << &textbit[1];
@@ -217,63 +204,60 @@ int main(int argc, char** argv)
 			/* park the cursor and hide it, then flush */
 			std::cout << esc << "[3;56H" << esc << "[?25l";
 			cout.flush();
-        }
+		}
 
-        /* now display "Lamps" */
-        availableRead = jack_ringbuffer_read_space(ledbuffer);
-        if( availableRead >= 2 )
-        {
-          int lp = availableRead / 2;
-          for(c=0; c<lp; c++)
-          {
-            int ledres = jack_ringbuffer_read(ledbuffer, (char*)textbit, 2 );
-            if ( ledres != 2 ) {
-				std::cout << "WARNING! didn't read full event!/n";
-				return -1;
-            }
-            /* Lamps 0 - 7 are Record enable */
-            if( textbit[0] < 8 )
-            {
-				texoff = (textbit[0] * 7) +2;
-				if (textbit[1] == 0) {
-					on = ' ';
-				} else {
-					on = 'R';
+		/* now display "Lamps" */
+		availableRead = jack_ringbuffer_read_space(ledbuffer);
+		if( availableRead >= 2 ) {
+			int lp = availableRead / 2;
+			for(c=0; c<lp; c++) {
+				int ledres = jack_ringbuffer_read(ledbuffer, (char*)textbit, 2 );
+				if ( ledres != 2 ) {
+					std::cout << "WARNING! didn't read full event!/n";
+					return -1;
 				}
-				std::cout << esc << "[3;" << texoff << "H" << esc << "[1;31m" << on;
-            } else if ( textbit[0] < 16 ) {
-				/* Lamps 8 - 15 are PFL (Solo?) buttons */
-				texoff = ((textbit[0] - 8) * 7) +3;
-				if (textbit[1] == 0) {
-					on = ' ';
-				} else {
-					on = 'P';
-				}
-				std::cout << esc << "[3;" << texoff << "H" << esc << "[1;32m" << on;
-            } else if ( textbit[0] < 24 ) {
-				/* Lamps 16 - 23 are Mute buttons */
-				texoff = ((textbit[0] - 16) * 7) +4;
-				if (textbit[1] == 0) {
-					on = ' ';
-				} else {
-					on = 'M';
-				}
-				std::cout << esc << "[3;" << texoff << "H" << esc << "[1;33m" << on;
-            } else if ( textbit[0] < 32 ) {
-				/* Lamps 24 - 31 are channel select indicators */
-				texoff = ((textbit[0] - 24) * 7) +1;
-				if (textbit[1] == 0) {
-					on = ' ';
-				} else {
-					on = 'S';
-				}
-				std::cout << esc << "[3;" << texoff << "H" << esc << "[1;37m" << on;
+				/* Lamps 0 - 7 are Record enable */
+				if( textbit[0] < 8 ) {
+					texoff = (textbit[0] * 7) +2;
+					if (textbit[1] == 0) {
+						on = ' ';
+					} else {
+						on = 'R';
+					}
+					std::cout << esc << "[3;" << texoff << "H" << esc << "[1;31m" << on;
+				} else if ( textbit[0] < 16 ) {
+					/* Lamps 8 - 15 are PFL (Solo?) buttons */
+					texoff = ((textbit[0] - 8) * 7) +3;
+					if (textbit[1] == 0) {
+						on = ' ';
+					} else {
+						on = 'P';
+					}
+					std::cout << esc << "[3;" << texoff << "H" << esc << "[1;32m" << on;
+				} else if ( textbit[0] < 24 ) {
+					/* Lamps 16 - 23 are Mute buttons */
+					texoff = ((textbit[0] - 16) * 7) +4;
+					if (textbit[1] == 0) {
+						on = ' ';
+					} else {
+						on = 'M';
+					}
+					std::cout << esc << "[3;" << texoff << "H" << esc << "[1;33m" << on;
+				} else if ( textbit[0] < 32 ) {
+					/* Lamps 24 - 31 are channel select indicators */
+					texoff = ((textbit[0] - 24) * 7) +1;
+					if (textbit[1] == 0) {
+						on = ' ';
+					} else {
+						on = 'S';
+					}
+					std::cout << esc << "[3;" << texoff << "H" << esc << "[1;37m" << on;
 				}
 			}
 			/* park cursor, hide it and flush buffer */
 			std::cout << esc << "[3;56H" << esc << "[?25l";
 			cout.flush();
-        }
+		}
 	}
 	std::cout << "after while\n";
 	cout.flush();
