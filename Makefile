@@ -27,7 +27,7 @@ DEBUG :=
 
 all: mcpdisp
 
-mcpdisp: mcpdisp.o -ljack
+mcpdisp: mcpdisp.o -ljack -lfltk
 
 install: all
 	install -D -m755 mcpdisp $(bindir)/mcpdisp

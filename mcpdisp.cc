@@ -22,9 +22,16 @@
 #include <signal.h>
 #include <iostream>
 
+//Jack includes
 #include <jack/jack.h>
 #include <jack/midiport.h>
 #include <jack/ringbuffer.h>
+
+//fltk includes
+#include <FL/Fl.H>
+#include <FL/Fl_Window.H>
+#include <FL/Fl_Output.H>
+
 
 using namespace std;
 
@@ -38,6 +45,14 @@ jack_port_t *input_port;
 jack_ringbuffer_t *ledbuffer = 0;
 /* One for text */
 jack_ringbuffer_t *textbuffer = 0;
+
+// text globals
+char line1_in[57];
+char line2_in[57];
+
+// fltk globals
+Fl_Output line1(5, 5, 580, 20, "");
+Fl_Output line2(5, 25, 580, 20, "");
 
 int process(jack_nframes_t nframes, void *arg)
 {
@@ -122,8 +137,10 @@ int main(int argc, char** argv)
 	char on;
 	int c;
 	char textbit[9];
-	int texoff;
+	int texoff, texi;
 	char esc = 0x1b;
+	line1_in[56] = 0x00;
+	line2_in[56] = 0x00;
 
 	if ((client = jack_client_open ("mcpdisp", JackNullOption, NULL)) == 0)
 	{
@@ -174,9 +191,29 @@ int main(int argc, char** argv)
 	std::cout << esc << "[3;56H" << esc << "[?25l";
 	cout.flush();
 
+	// lets make a window
+	Fl_Window win (600, 75, "Mackie Control Display Emulator");
+	win.color(56);
+		win.begin();
+			win.add(line1);
+			line1.color(57);
+			line1.textfont(4);
+			line1.textcolor(181);
+			line1.textsize(16);
+			line1.value(line1_in);
+			win.add(line2);
+			line2.color(57);
+			line2.textfont(4);
+			line2.textcolor(181);
+			line2.textsize(16);
+			line2.value(line2_in);
+		win.end();
+	win.show ();
+
 	/* run until interrupted */
 	while(1)
 	{
+		Fl::wait(0);
 		usleep(1000);
 		/* first do text fields */
 		int availableRead = jack_ringbuffer_read_space(textbuffer);
@@ -195,10 +232,18 @@ int main(int argc, char** argv)
 				/* top row */
 				if(texoff < 56) {
 					std::cout << esc << "[1;" << texoff << "H" << esc << "[1;37m" << &textbit[1];
+					for (texi = 0; texi < 7; texi++) {
+						line1_in[texoff - 1 + texi] = textbit[texi + 1];
+					}
+					line1.value(line1_in);
 				} else {
 					/* bottom row */
 					texoff = texoff - 56;
 					std::cout << esc << "[2;" << texoff << "H" << esc << "[1;37m" << &textbit[1];
+					for (texi = 0; texi < 7; texi++) {
+						line2_in[texoff - 1 + texi] = textbit[texi + 1];
+					}
+					line2.value(line2_in);
 				}
 			}
 			/* park the cursor and hide it, then flush */
