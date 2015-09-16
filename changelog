@@ -2,6 +2,7 @@ mcpdisp (0.0.4) Prerelease
 
   * Moved from c to c++ to work with GUI.
   * Cleaned up white space.
+  * Added GUI window with top two lines.
 
  -- Len Ovens <len@music>  Sun, 13 Sep 2015 20:01:10 -0700
 
