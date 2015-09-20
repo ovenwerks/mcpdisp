@@ -31,7 +31,7 @@
 #include <FL/Fl.H>
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Output.H>
-
+#include <FL/Fl_Pack.H>
 
 using namespace std;
 
@@ -51,8 +51,79 @@ char line1_in[57];
 char line2_in[57];
 
 // fltk globals
-Fl_Output line1(5, 5, 580, 20, "");
-Fl_Output line2(5, 25, 580, 20, "");
+Fl_Output line1(5, 5, 564, 20, "");
+Fl_Output line2(5, 25, 564, 20, "");
+
+class ChLed : public Fl_Pack
+{
+private:
+int wx, wy;
+Fl_Output *led_R;
+Fl_Output *led_S;
+Fl_Output *led_M;
+Fl_Output *led_W;
+public:
+
+		ChLed(int wx, int wy) :
+		Fl_Pack(wx, wy, 60, 20, "")
+		{
+		// Set color of group to dark green
+		color(57);
+		type(Fl_Pack::HORIZONTAL);
+		// Begin adding children to this group
+		begin();
+			led_R = new Fl_Output(5, 50, 15, 20, "");
+			led_R->color(57);
+			led_S = new Fl_Output(20, 50, 15, 20, "");
+			led_S->color(57);
+			led_M = new Fl_Output(35, 50, 15, 20, "");
+			led_M->color(57);
+			led_W = new Fl_Output(50, 50, 15, 20, "");
+			led_W->color(57);
+
+		// Stop adding children to this group
+		end();
+		// Display the window
+		show();
+		}
+
+void rec (bool rst) {
+	if (rst == true) {
+		led_R->color(FL_RED);
+	} else {
+		led_R->color(57);
+	}
+	led_R->redraw();
+}
+
+void sol (bool sst) {
+	if (sst == true) {
+		led_S->color(FL_GREEN);
+	} else {
+		led_S->color(57);
+	}
+	led_S->redraw();
+}
+
+void mute (bool mst) {
+	if (mst == true) {
+		led_M->color(FL_YELLOW);
+	} else {
+		led_M->color(57);
+	}
+	led_M->redraw();
+}
+
+void sel (bool sest) {
+	if (sest == true) {
+		led_W->color(FL_WHITE);
+	} else {
+		led_W->color(57);
+	}
+	led_W->redraw();
+}
+
+};
 
 int process(jack_nframes_t nframes, void *arg)
 {
@@ -112,7 +183,18 @@ int process(jack_nframes_t nframes, void *arg)
 	return 0;
 }
 
+// Clean up if someone closes the window
+void close_cb(Fl_Widget*, void*) {
+	printf("Killing child processes..\n");
+	jack_port_unregister(client, input_port);
+	jack_deactivate(client);
+	jack_ringbuffer_free(ledbuffer);
+	jack_ringbuffer_free(textbuffer);
+	jack_client_close(client);
 
+	printf("Done.\n");
+	exit(0);
+}
 /* Allow SIGTERM to cause graceful termination */
 /* I don't know which of these are actually needed, but it ends nice */
 void on_term(int signum) {
@@ -132,15 +214,13 @@ void jack_shutdown(void *arg)
 }
 
 int main(int argc, char** argv)
-//int main()
 {
-	char on;
 	int c;
 	char textbit[9];
 	int texoff, texi;
-	char esc = 0x1b;
 	line1_in[56] = 0x00;
 	line2_in[56] = 0x00;
+	ChLed *chled[8];
 
 	if ((client = jack_client_open ("mcpdisp", JackNullOption, NULL)) == 0)
 	{
@@ -187,12 +267,9 @@ int main(int argc, char** argv)
 	signal(SIGKILL, on_term);
 	signal(SIGABRT, on_term);
 
-	/* clear screen, park the cursor and hide it. Then flush */
-	std::cout << esc << "[3;56H" << esc << "[?25l";
-	cout.flush();
-
-	// lets make a window
-	Fl_Window win (600, 75, "Mackie Control Display Emulator");
+		// lets make a window
+	Fl_Window win (4000, 4000, 575, 75, "Mackie Control Display Emulator");
+	win.callback(close_cb);
 	win.color(56);
 		win.begin();
 			win.add(line1);
@@ -207,8 +284,14 @@ int main(int argc, char** argv)
 			line2.textcolor(181);
 			line2.textsize(16);
 			line2.value(line2_in);
+			for ( int x=0; x < 8; x++) {
+				ChLed *led = new ChLed((8 + (x * 70)), 45);
+				chled[x] = led;
+			}
+
 		win.end();
 	win.show ();
+
 
 	/* run until interrupted */
 	while(1)
@@ -231,7 +314,6 @@ int main(int argc, char** argv)
 				texoff = textbit[0]+1;
 				/* top row */
 				if(texoff < 56) {
-					std::cout << esc << "[1;" << texoff << "H" << esc << "[1;37m" << &textbit[1];
 					for (texi = 0; texi < 7; texi++) {
 						line1_in[texoff - 1 + texi] = textbit[texi + 1];
 					}
@@ -239,16 +321,12 @@ int main(int argc, char** argv)
 				} else {
 					/* bottom row */
 					texoff = texoff - 56;
-					std::cout << esc << "[2;" << texoff << "H" << esc << "[1;37m" << &textbit[1];
 					for (texi = 0; texi < 7; texi++) {
 						line2_in[texoff - 1 + texi] = textbit[texi + 1];
 					}
 					line2.value(line2_in);
 				}
 			}
-			/* park the cursor and hide it, then flush */
-			std::cout << esc << "[3;56H" << esc << "[?25l";
-			cout.flush();
 		}
 
 		/* now display "Lamps" */
@@ -263,45 +341,34 @@ int main(int argc, char** argv)
 				}
 				/* Lamps 0 - 7 are Record enable */
 				if( textbit[0] < 8 ) {
-					texoff = (textbit[0] * 7) +2;
 					if (textbit[1] == 0) {
-						on = ' ';
+						chled[(int) textbit[0]]->rec(false);
 					} else {
-						on = 'R';
+						chled[(int)textbit[0]]->rec(true);
 					}
-					std::cout << esc << "[3;" << texoff << "H" << esc << "[1;31m" << on;
 				} else if ( textbit[0] < 16 ) {
 					/* Lamps 8 - 15 are PFL (Solo?) buttons */
-					texoff = ((textbit[0] - 8) * 7) +3;
 					if (textbit[1] == 0) {
-						on = ' ';
+						chled[(int) textbit[0] - 8]->sol(false);
 					} else {
-						on = 'P';
+						chled[(int) textbit[0] - 8]->sol(true);
 					}
-					std::cout << esc << "[3;" << texoff << "H" << esc << "[1;32m" << on;
 				} else if ( textbit[0] < 24 ) {
 					/* Lamps 16 - 23 are Mute buttons */
-					texoff = ((textbit[0] - 16) * 7) +4;
 					if (textbit[1] == 0) {
-						on = ' ';
+						chled[(int) textbit[0] - 16]->mute(false);
 					} else {
-						on = 'M';
+						chled[(int) textbit[0] - 16]->mute(true);
 					}
-					std::cout << esc << "[3;" << texoff << "H" << esc << "[1;33m" << on;
 				} else if ( textbit[0] < 32 ) {
 					/* Lamps 24 - 31 are channel select indicators */
-					texoff = ((textbit[0] - 24) * 7) +1;
 					if (textbit[1] == 0) {
-						on = ' ';
+						chled[(int) textbit[0] - 24]->sel(false);
 					} else {
-						on = 'S';
+						chled[(int) textbit[0] - 24]->sel(true);
 					}
-					std::cout << esc << "[3;" << texoff << "H" << esc << "[1;37m" << on;
 				}
 			}
-			/* park cursor, hide it and flush buffer */
-			std::cout << esc << "[3;56H" << esc << "[?25l";
-			cout.flush();
 		}
 	}
 	std::cout << "after while\n";

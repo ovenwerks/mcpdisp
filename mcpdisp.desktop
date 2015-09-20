@@ -4,6 +4,6 @@ Name=mcpdisp
 GenericName=mcpdisp
 Comment=Mackie Control Surface Emulator
 Icon=mcpdisp
-Exec=mcpdisp.sh
+Exec=mcpdisp -geometry 56x3+2000-1
 Terminal=false
 Categories=AudioVideo;Audio;Midi;
