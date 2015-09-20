@@ -1,4 +1,10 @@
-mcpdisp (0.0.4) Prerelease
+mcpdisp (0.0.5) prerelease
+
+  * Fixed INSTALL file for no mcpdisp.sh.
+
+ -- Len Ovens <len@music>  Sun, 20 Sep 2015 13:46:10 -0700
+
+mcpdisp (0.0.4) released
 
   * Moved from c to c++ to work with GUI.
   * Cleaned up white space.
