@@ -221,6 +221,7 @@ int main(int argc, char** argv)
 	line1_in[56] = 0x00;
 	line2_in[56] = 0x00;
 	ChLed *chled[8];
+	//char *wname;
 
 	if ((client = jack_client_open ("mcpdisp", JackNullOption, NULL)) == 0)
 	{
@@ -267,8 +268,13 @@ int main(int argc, char** argv)
 	signal(SIGKILL, on_term);
 	signal(SIGABRT, on_term);
 
+
+	char *jname = jack_get_client_name (client);
+	//strcpy (wname,"Mackie Control Display Emulator - ");
+	//strcat (wname, jname);
+
 		// lets make a window
-	Fl_Window win (4000, 4000, 575, 75, "Mackie Control Display Emulator");
+	Fl_Window win (4000, 4000, 575, 75, jname);
 	win.callback(close_cb);
 	win.color(56);
 		win.begin();

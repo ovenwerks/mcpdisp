@@ -3,7 +3,8 @@ mcpdisp (0.0.4) Prerelease
   * Moved from c to c++ to work with GUI.
   * Cleaned up white space.
   * Added GUI window with top two lines.
-  * brought GUI to current text functionality
+  * brought GUI to current text functionality.
+  * Make window name match jack port.
 
  -- Len Ovens <len@music>  Sat, 19 Sep 2015 20:50:10 -0700
 
