@@ -46,13 +46,18 @@ jack_ringbuffer_t *ledbuffer = 0;
 /* One for text */
 jack_ringbuffer_t *textbuffer = 0;
 
+// state globals
+bool master (true);
+
 // text globals
 char line1_in[57];
 char line2_in[57];
+char disp2_in[3];
 
 // fltk globals
 Fl_Output line1(5, 5, 564, 20, "");
 Fl_Output line2(5, 25, 564, 20, "");
+Fl_Output disp2(570, 5, 59, 40, "");
 
 class ChLed : public Fl_Pack
 {
@@ -152,11 +157,10 @@ int process(jack_nframes_t nframes, void *arg)
 					} else {
 					/* only for debug
 						printf("textbuffer full skipping");*/
-
 					}
 				}
-			}
-			else if( (*(in_event.buffer)) == 0x90 ) {
+
+			} else if( (*(in_event.buffer)) == 0x90 ) {
 				/* button press LED returns */
 				if ((*(in_event.buffer+1)) < 32)
 				{
@@ -175,7 +179,27 @@ int process(jack_nframes_t nframes, void *arg)
 
 					}
 				}
+			} else if( (*(in_event.buffer)) == 0xb0 ) {
+				if(master) { // master uses b0 for 7 segment info
+					char data1 = 0x20;
+					if( (*(in_event.buffer+2)) < 0xb0 ) {
+						data1 = (*(in_event.buffer+2)) + 0x40;
+					} else {
+						 data1 = (*(in_event.buffer+2));
+					}
+					switch ((*(in_event.buffer+1))) {
+						case 0x4b:	// left assign char
+							disp2_in[0] = data1;
+							break;
+						case 0x4a:	// left assign char
+							disp2_in[1] = data1;
+							break;
+						default:
+							break;
+					}
+				}
 			}
+
 		}
 	}
 
@@ -217,9 +241,10 @@ int main(int argc, char** argv)
 {
 	int c;
 	char textbit[9];
-	int texoff, texi;
+	int texoff, texi, winsz;
 	line1_in[56] = 0x00;
 	line2_in[56] = 0x00;
+	disp2_in[2] = 0x00;
 	ChLed *chled[8];
 	//char *wname;
 
@@ -274,7 +299,12 @@ int main(int argc, char** argv)
 	//strcat (wname, jname);
 
 		// lets make a window
-	Fl_Window win (4000, 4000, 575, 75, jname);
+	if(master) {
+		winsz = 635;
+	} else {
+		winsz = 574;
+	}
+	Fl_Window win (4000, 4000, winsz, 75, jname);
 	win.callback(close_cb);
 	win.color(56);
 		win.begin();
@@ -293,6 +323,14 @@ int main(int argc, char** argv)
 			for ( int x=0; x < 8; x++) {
 				ChLed *led = new ChLed((8 + (x * 70)), 45);
 				chled[x] = led;
+			}
+			if(master) {
+				win.add(disp2);
+				disp2.color(64);
+				disp2.textfont(5);
+				disp2.textcolor(88);
+				disp2.textsize(42);
+				disp2.value(disp2_in);
 			}
 
 		win.end();
@@ -334,6 +372,8 @@ int main(int argc, char** argv)
 				}
 			}
 		}
+		// display assign value
+		disp2.value(disp2_in);
 
 		/* now display "Lamps" */
 		availableRead = jack_ringbuffer_read_space(ledbuffer);
