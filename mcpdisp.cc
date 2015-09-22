@@ -53,11 +53,14 @@ bool master (true);
 char line1_in[57];
 char line2_in[57];
 char disp2_in[3];
+char time1_in[14];
+char tm_bt;
 
 // fltk globals
 Fl_Output line1(5, 5, 564, 20, "");
 Fl_Output line2(5, 25, 564, 20, "");
 Fl_Output disp2(570, 5, 59, 40, "");
+Fl_Output time1(630, 5, 330,40, "");
 
 class ChLed : public Fl_Pack
 {
@@ -178,12 +181,24 @@ int process(jack_nframes_t nframes, void *arg)
 						// printf("textbuffer full skipping");
 
 					}
+				} else if(master) { // catch master LED returns of interest
+					switch ((*(in_event.buffer+1))) {
+						case 0x72:	// time display is time
+							if((*(in_event.buffer+2)) == 0) tm_bt = ':';
+							break;
+						case 0x71:	// time display is beats and bars
+							if((*(in_event.buffer+2)) == 0) tm_bt = '|';
+							break;
+						default:
+							break;
+					}
 				}
 			} else if( (*(in_event.buffer)) == 0xb0 ) {
 				if(master) { // master uses b0 for 7 segment info
 					char data1 = 0x20;
-					if( (*(in_event.buffer+2)) < 0xb0 ) {
+					if( (*(in_event.buffer+2)) < 0x20 ) {
 						data1 = (*(in_event.buffer+2)) + 0x40;
+						if(data1 == 0x40) data1 = 0x20;
 					} else {
 						 data1 = (*(in_event.buffer+2));
 					}
@@ -193,6 +208,36 @@ int process(jack_nframes_t nframes, void *arg)
 							break;
 						case 0x4a:	// left assign char
 							disp2_in[1] = data1;
+							break;
+						case 0x49:	// time digit 10 (msb)
+							time1_in[0] = data1;
+							break;
+						case 0x48:	// time digit 9
+							time1_in[1] = data1;
+							break;
+						case 0x47:	// time digit 8
+							time1_in[2] = data1;
+							break;
+						case 0x46:	// time digit 7
+							time1_in[4] = data1;
+							break;
+						case 0x45:	// time digit 6
+							time1_in[5] = data1;
+							break;
+						case 0x44:	// time digit 5
+							time1_in[7] = data1;
+							break;
+						case 0x43:	// time digit 4
+							time1_in[8] = data1;
+							break;
+						case 0x42:	// time digit 3
+							time1_in[10] = data1;
+							break;
+						case 0x41:	// time digit 2
+							time1_in[11] = data1;
+							break;
+						case 0x40:	// time digit 1 (lsb)
+							time1_in[12] = data1;
 							break;
 						default:
 							break;
@@ -245,6 +290,8 @@ int main(int argc, char** argv)
 	line1_in[56] = 0x00;
 	line2_in[56] = 0x00;
 	disp2_in[2] = 0x00;
+	time1_in[13] = 0x00;
+	tm_bt = '|';
 	ChLed *chled[8];
 	//char *wname;
 
@@ -300,7 +347,7 @@ int main(int argc, char** argv)
 
 		// lets make a window
 	if(master) {
-		winsz = 635;
+		winsz = 965;
 	} else {
 		winsz = 574;
 	}
@@ -325,12 +372,20 @@ int main(int argc, char** argv)
 				chled[x] = led;
 			}
 			if(master) {
+				// Two char display
 				win.add(disp2);
 				disp2.color(64);
 				disp2.textfont(5);
 				disp2.textcolor(88);
 				disp2.textsize(42);
 				disp2.value(disp2_in);
+				// timecode/bar display
+				win.add(time1);
+				time1.color(64);
+				time1.textfont(5);
+				time1.textcolor(88);
+				time1.textsize(42);
+				time1.value(time1_in);
 			}
 
 		win.end();
@@ -372,8 +427,6 @@ int main(int argc, char** argv)
 				}
 			}
 		}
-		// display assign value
-		disp2.value(disp2_in);
 
 		/* now display "Lamps" */
 		availableRead = jack_ringbuffer_read_space(ledbuffer);
@@ -416,6 +469,18 @@ int main(int argc, char** argv)
 				}
 			}
 		}
+		if(master) {
+			// display assign value
+			disp2.value(disp2_in);
+			// insert | for beats or : for time.
+			time1_in[3] = tm_bt;
+			time1_in[6] = tm_bt;
+			time1_in[9] = tm_bt;
+			// diplay time.
+			time1.value(time1_in);
+		}
+
+
 	}
 	std::cout << "after while\n";
 	cout.flush();
