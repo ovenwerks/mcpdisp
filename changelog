@@ -1,8 +1,16 @@
 mcpdisp (0.0.5) prerelease
 
   * Fixed INSTALL file for no mcpdisp.sh.
+  * Added Assign display.
+  * Added timecode/beats display.
+  * Added Strip meters.
+  * Added command line parameters for help, version, master and time.
+  * Made window title more descriptive.
+  * jack client name shows mcpdisp-ext if no -m
+  * Clean up source... again.
+  * Remove extra processing of unused CC signals.
 
- -- Len Ovens <len@music>  Sun, 20 Sep 2015 13:46:10 -0700
+ -- Len Ovens <len@music>  Sat, 26 Sep 2015 10:01:10 -0700
 
 mcpdisp (0.0.4) released
 
