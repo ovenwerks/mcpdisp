@@ -252,34 +252,18 @@ int process(jack_nframes_t nframes, void *arg)
 
 			} else if( (*(in_event.buffer)) == 0x90 ) {
 				// button press LED returns
-				// Channels LEDs are all under 0x20
-				if ((*(in_event.buffer+1)) < 32)
+				int availableWrite = jack_ringbuffer_write_space(ledbuffer);
+				if (availableWrite >= 2)
 				{
-					int availableWrite = jack_ringbuffer_write_space(ledbuffer);
-					if (availableWrite >= 2)
-					{
-						int written = jack_ringbuffer_write( ledbuffer, (const char*) (in_event.buffer + 1), 2 );
-						if (written != 2 ) {
-							/* only use this for debug
-							printf("ERROR! Partial textbuffer write"); */
-						}
-					} else {
-						/* there is no real reason to mess up our display with this text
-						 * unless we are debugging */
-						// printf("textbuffer full skipping");
-
+					int written = jack_ringbuffer_write( ledbuffer, (const char*) (in_event.buffer + 1), 2 );
+					if (written != 2 ) {
+						/* only use this for debug
+						printf("ERROR! Partial textbuffer write"); */
 					}
-				} else if(master) { // catch Master/Global LED returns of interest
-					switch ((*(in_event.buffer+1))) {
-						case 0x72:	// time display is time
-							if((*(in_event.buffer+2)) == 0) tm_bt = ':';
-							break;
-						case 0x71:	// time display is beats and bars
-							if((*(in_event.buffer+2)) == 0) tm_bt = '|';
-							break;
-						default:
-							break;
-					}
+				} else {
+					/* there is no real reason to mess up our display with this text
+					 * unless we are debugging */
+					// printf("textbuffer full skipping");
 				}
 			} else if( (*(in_event.buffer)) == 0xd0 ) {
 				// we have meter info
@@ -296,7 +280,6 @@ int process(jack_nframes_t nframes, void *arg)
 					 * unless we are debugging */
 					// printf("meterbuffer full skipping");
 				}
-
 			} else if( (*(in_event.buffer)) == 0xb0 ) {
 				if(master) { // master uses b0 for 7 segment info
 							// also used for vpot return, we should
@@ -318,7 +301,7 @@ int process(jack_nframes_t nframes, void *arg)
 								disp2_in[1] = data1;
 								break;
 							// timecode stuff, should maybe not be checked
-							// for if not used
+							// for if not used, if time turned off, no data sent.
 							case 0x49:	// time digit 10 (msb)
 								time1_in[0] = data1;
 								break;
@@ -639,6 +622,89 @@ int main(int argc, char** argv)
 						chan[(int) textbit[0] - 24]->sel(false);
 					} else {
 						chan[(int) textbit[0] - 24]->sel(true);
+					}
+				} else if (master) { // anything else is a master
+					switch ((int) textbit[0]) { // always do transport
+						case 0x5b:
+							// rewind «⏪
+							break;
+						case 0x5c:
+							// fwd »⏩
+							break;
+						case 0x5d:
+							// stop∎■⬛
+							break;
+						case 0x5e:
+							// play‣▶
+							break;
+						case 0x5f:
+							// master record enable●⬤
+							break;
+						// these next two are really shotime only, but don't hurt anything
+						case 0x72:	// time display is time
+							if(textbit[1] == 0) tm_bt = ':';
+							break;
+						case 0x71:	// time display is beats and bars
+							if(textbit[1] == 0) tm_bt = '|';
+							break;
+						default:
+							break;
+					}
+				} else if (master && !shotime) {
+					// if time is off we have room for more lamps
+					switch ((int) textbit[0]) {
+						case 0x28:
+							// track (Trim)
+						case 0x29:
+							// Send
+						case 0x2a:
+							// Pan
+						case 0x2b:
+							// Plug-in
+						case 0x2c:
+							// EQ
+						case 0x2d:
+							// Intrument
+						case 0x32:
+							// Flip
+						case 0x33:
+							// global view
+						case 0x4a:
+							// read/off
+						case 0x4b:
+							// write
+						case 0x4c:
+							// trim (not trim pot)
+						case 0x4d:
+							// touch
+						case 0x4e:
+							// latch
+						case 0x4f:
+							// group
+						case 0x50:
+							//save
+						case 0x51:
+							// undo
+						case 0x54:
+							// marker
+						case 0x55:
+							// nudge
+						case 0x56:
+							// cycle
+						case 0x57:
+							// drop
+						case 0x58:
+							// replace
+						case 0x59:
+							// click
+						case 0x5a:
+							// solo
+						case 0x64:
+							// zoom
+						case 0x65:
+							// scrub
+						default:
+							break;
 					}
 				}
 			}
