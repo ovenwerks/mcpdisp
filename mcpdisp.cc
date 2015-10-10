@@ -203,6 +203,225 @@ public:
 		}
 };
 
+// transport
+class Transport : public Fl_Pack
+{
+private:
+int wx, wy;
+Fl_Output *RW;
+Fl_Output *FF;
+Fl_Output *Stop;
+Fl_Output *Play;
+Fl_Output *Rec;
+Fl_Output *Solo;
+Fl_Output *Assign;
+Fl_Output *Flip;
+Fl_Output *View;
+public:
+
+		Transport(int wx, int wy) :
+		Fl_Pack(wx, wy, 250, 30, "")
+		{
+		color(57);
+		type(Fl_Pack::HORIZONTAL);
+		begin();
+			RW = new Fl_Output(1, 1, 26, 30, "");
+			RW->color(58);
+			RW->textsize(18);
+			RW->textcolor(57);
+			RW->align(0);
+			RW->value("◂◂");
+			FF = new Fl_Output(26, 1, 26, 30, "");
+			FF->color(58);
+			FF->textsize(18);
+			FF->textcolor(57);
+			FF->value("▸▸");
+			Stop = new Fl_Output(52, 1, 26, 30, "");
+			Stop->color(58);
+			Stop->textsize(18);
+			Stop->textcolor(57);
+			Stop->value("■");
+			Play = new Fl_Output(80, 1, 26, 30, "");
+			Play->color(58);
+			Play->textsize(18);
+			Play->textcolor(57);
+			Play->value("▶");
+			Rec = new Fl_Output(106, 1, 26, 30, "");
+			Rec->color(105);
+			Rec->textsize(16);
+			Rec->textcolor(106);
+			Rec->value("⬤");
+			Solo = new Fl_Output(130, 1, 50, 30, "");
+			Solo->color(105);
+			Solo->textsize(19);
+			Solo->textcolor(106);
+			Solo->value("Solo");
+			Assign = new Fl_Output(130, 1, 114, 30, "");
+			Assign->color(58);
+			Assign->textsize(19);
+			Assign->textcolor(61);
+			Assign->value("");
+			Flip = new Fl_Output(130, 1, 42, 30, "");
+			Flip->color(58);
+			Flip->textsize(19);
+			Flip->textcolor(57);
+			Flip->value("Flip");
+			View = new Fl_Output(130, 1, 54, 30, "");
+			View->color(58);
+			View->textsize(19);
+			View->textcolor(57);
+			View->value("View");
+		end();
+		show();
+		}
+
+// turn record enable LED on/off
+void rec (bool rst) {
+	if (rst == true) {
+		Rec->textcolor(1);
+	} else {
+		Rec->textcolor(106);
+	}
+	Rec->redraw();
+}
+
+// turn SOLO warning LED on/off
+void solo (bool rst) {
+	if (rst == true) {
+		Solo->textcolor(1);
+	} else {
+		Solo->textcolor(106);
+	}
+	Solo->redraw();
+}
+
+// turn RW LED on/off
+void rw (bool rst) {
+	if (rst == true) {
+		RW->textcolor(61);
+	} else {
+		RW->textcolor(57);
+	}
+	RW->redraw();
+}
+
+// turn FF LED on/off
+void ff (bool rst) {
+	if (rst == true) {
+		FF->textcolor(61);
+	} else {
+		FF->textcolor(57);
+	}
+	FF->redraw();
+}
+
+// turn Stop LED on/off
+void stop (bool rst) {
+	if (rst == true) {
+		Stop->textcolor(61);
+	} else {
+		Stop->textcolor(57);
+	}
+	Stop->redraw();
+}
+
+// turn Play LED on/off
+void play (bool rst) {
+	if (rst == true) {
+		Play->textcolor(61);
+	} else {
+		Play->textcolor(57);
+	}
+	Play->redraw();
+}
+
+
+// turn Flip LED on/off
+void flip (bool rst) {
+	if (rst == true) {
+		Flip->textcolor(61);
+	} else {
+		Flip->textcolor(57);
+	}
+	Flip->redraw();
+}
+
+// turn View LED on/off
+void view (bool rst) {
+	if (rst == true) {
+		View->textcolor(61);
+	} else {
+		View->textcolor(57);
+	}
+	View->redraw();
+}
+
+// Set vpot assignment -> track
+void track (bool pk) {
+	if (pk == true) {
+		Assign->value("  Track");
+	} /*else {
+		Assign->value("");
+	}*/
+	Assign->redraw();
+}
+
+// Set vpot assignment -> send
+void send (bool pk) {
+	if (pk == true) {
+		Assign->value("  Send");
+	} /*else {
+		Assign->value("");
+	}*/
+	Assign->redraw();
+}
+
+
+// Set vpot assignment -> pan
+void pan (bool pk) {
+	if (pk == true) {
+		Assign->value("   Pan");
+	} /*else {
+		Assign->value("");
+	}*/
+	Assign->redraw();
+}
+
+// Set vpot assignment -> plugin
+void plug (bool pk) {
+	if (pk == true) {
+		Assign->value("  Plugin");
+	} /*else {
+		Assign->value("");
+	}*/
+	Assign->redraw();
+}
+
+
+// Set vpot assignment -> EQ
+void eq (bool pk) {
+	if (pk == true) {
+		Assign->value("     EQ");
+	} /*else {
+		Assign->value("");
+	}*/
+	Assign->redraw();
+}
+
+// Set vpot assignment -> Instrument
+void inst (bool pk) {
+	if (pk == true) {
+		Assign->value("Instrument");
+	} /*else {
+		Assign->value("");
+	}*/
+	Assign->redraw();
+}
+
+
+};
+
+
 static int usage() {
 	printf(
 	"mcpdisp Version %s\n"
@@ -390,6 +609,7 @@ int main(int argc, char** argv)
 	tm_bt = '|';
 	Chan *chan[8];
 	char wname[64];
+	Transport *transport;
 
 
     struct option options[] = {
@@ -531,6 +751,7 @@ int main(int argc, char** argv)
 				disp2.textcolor(88);
 				disp2.textsize(42);
 				disp2.value(disp2_in);
+				transport = new Transport(570, 45);
 				if(shotime) {
 					// timecode/bar display
 					win.add(time1);
@@ -627,18 +848,59 @@ int main(int argc, char** argv)
 					switch ((int) textbit[0]) { // always do transport
 						case 0x5b:
 							// rewind «⏪
+							transport->rw(textbit[1]);
 							break;
 						case 0x5c:
 							// fwd »⏩
+							transport->ff(textbit[1]);
 							break;
 						case 0x5d:
+							transport->stop(textbit[1]);
 							// stop∎■⬛
 							break;
 						case 0x5e:
 							// play‣▶
+							transport->play(textbit[1]);
 							break;
 						case 0x5f:
-							// master record enable●⬤
+							// master record enable
+							transport->rec(textbit[1]);
+							break;
+						case 0x73:
+							transport->solo(textbit[1]);
+							// solo
+							break;
+						case 0x32:
+							transport->flip(textbit[1]);
+							// Flip
+							break;
+						case 0x33:
+							// global view
+							transport->view(textbit[1]);
+							break;
+						case 0x28:
+							// track (Trim)
+							transport->track(textbit[1]);
+							break;
+						case 0x29:
+							// Send
+							transport->send(textbit[1]);
+							break;
+						case 0x2a:
+							// Pan
+							transport->pan(textbit[1]);
+							break;
+						case 0x2b:
+							// Plug-in
+							transport->plug(textbit[1]);
+							break;
+						case 0x2c:
+							// EQ
+							transport->eq(textbit[1]);
+							break;
+						case 0x2d:
+							// Instrument
+							transport->inst(textbit[1]);
 							break;
 						// these next two are really shotime only, but don't hurt anything
 						case 0x72:	// time display is time
@@ -653,22 +915,6 @@ int main(int argc, char** argv)
 				} else if (master && !shotime) {
 					// if time is off we have room for more lamps
 					switch ((int) textbit[0]) {
-						case 0x28:
-							// track (Trim)
-						case 0x29:
-							// Send
-						case 0x2a:
-							// Pan
-						case 0x2b:
-							// Plug-in
-						case 0x2c:
-							// EQ
-						case 0x2d:
-							// Intrument
-						case 0x32:
-							// Flip
-						case 0x33:
-							// global view
 						case 0x4a:
 							// read/off
 						case 0x4b:
@@ -697,8 +943,6 @@ int main(int argc, char** argv)
 							// replace
 						case 0x59:
 							// click
-						case 0x5a:
-							// solo
 						case 0x64:
 							// zoom
 						case 0x65:

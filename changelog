@@ -9,8 +9,10 @@ mcpdisp (0.0.5) prerelease
   * jack client name shows mcpdisp-ext if no -m
   * Clean up source... again.
   * Remove extra processing of unused CC signals.
+  * Start work on global buttons, moved SMPT/beats out of real time.
+  * Finshed Transport LEDs and flip, assign and View LEDs.
 
- -- Len Ovens <len@music>  Sat, 26 Sep 2015 10:01:10 -0700
+ -- Len Ovens <len@music>  Fri Oct 9 15:58:36 2015 -0700
 
 mcpdisp (0.0.4) released
 
