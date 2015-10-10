@@ -8,6 +8,7 @@ on the screen. The strip LEDs and meters are displayed as well.
 If -m is added to the command line, Global or Master displays are added.
  - The two charactor Assign display
  - The Timecode display (optional with -t)
+ - When -t is not used the same space shows other button states.
 
 This is handy for devices such as the BCF2000 or midikb that have no
 display of their own.

@@ -229,7 +229,6 @@ public:
 			RW->color(58);
 			RW->textsize(18);
 			RW->textcolor(57);
-			RW->align(0);
 			RW->value("◂◂");
 			FF = new Fl_Output(26, 1, 26, 30, "");
 			FF->color(58);
@@ -360,9 +359,7 @@ void view (bool rst) {
 void track (bool pk) {
 	if (pk == true) {
 		Assign->value("  Track");
-	} /*else {
-		Assign->value("");
-	}*/
+	}
 	Assign->redraw();
 }
 
@@ -370,9 +367,7 @@ void track (bool pk) {
 void send (bool pk) {
 	if (pk == true) {
 		Assign->value("  Send");
-	} /*else {
-		Assign->value("");
-	}*/
+	}
 	Assign->redraw();
 }
 
@@ -381,9 +376,7 @@ void send (bool pk) {
 void pan (bool pk) {
 	if (pk == true) {
 		Assign->value("   Pan");
-	} /*else {
-		Assign->value("");
-	}*/
+	}
 	Assign->redraw();
 }
 
@@ -391,9 +384,7 @@ void pan (bool pk) {
 void plug (bool pk) {
 	if (pk == true) {
 		Assign->value("  Plugin");
-	} /*else {
-		Assign->value("");
-	}*/
+	}
 	Assign->redraw();
 }
 
@@ -402,9 +393,7 @@ void plug (bool pk) {
 void eq (bool pk) {
 	if (pk == true) {
 		Assign->value("     EQ");
-	} /*else {
-		Assign->value("");
-	}*/
+	}
 	Assign->redraw();
 }
 
@@ -412,9 +401,7 @@ void eq (bool pk) {
 void inst (bool pk) {
 	if (pk == true) {
 		Assign->value("Instrument");
-	} /*else {
-		Assign->value("");
-	}*/
+	}
 	Assign->redraw();
 }
 
