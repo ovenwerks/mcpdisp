@@ -656,7 +656,7 @@ int main(int argc, char** argv)
 
 	jack_on_shutdown (client, jack_shutdown, 0);
 
-	input_port = jack_port_register (client, "midi_in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
+	input_port = jack_port_register (client, "midi_in", JACK_DEFAULT_MIDI_TYPE, (JackPortIsInput | JackPortIsTerminal), 0);
 
 	/* setup LED buffer - All of these may change at once
 		maybe twice close together. */
@@ -747,6 +747,8 @@ int main(int argc, char** argv)
 					time1.textcolor(88);
 					time1.textsize(42);
 					time1.value(time1_in);
+				} else {
+					// stuff that only shows when time doesn't
 				}
 			}
 
