@@ -11,8 +11,9 @@ mcpdisp (0.0.5) prerelease
   * Remove extra processing of unused CC signals.
   * Start work on global buttons, moved SMPT/beats out of real time.
   * Finished Transport LEDs and flip, assign and View LEDs.
+  * Set MIDI in port to type Terminal.
 
- -- Len Ovens <len@music>  Fri Oct 9 22:17:01 2015 -0700
+ -- Len Ovens <len@music>  Mon Oct 12 07:55:20 2015 -0700
 
 mcpdisp (0.0.4) released
 
