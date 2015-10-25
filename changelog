@@ -1,4 +1,4 @@
-mcpdisp (0.0.5) prerelease
+mcpdisp (0.0.5) released
 
   * Fixed INSTALL file for no mcpdisp.sh.
   * Added Assign display.
@@ -15,6 +15,7 @@ mcpdisp (0.0.5) prerelease
   * Set Display in to accept whole display of text at a time.
   * Move midi parsing out of real time.
   * Only update time/beats when new time/beat data comes in.
+  * Release 0.0.5
 
  -- Len Ovens <len@music>  Sat Oct 24 20:09:30 2015 -0700
 
