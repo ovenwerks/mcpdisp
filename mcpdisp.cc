@@ -44,13 +44,8 @@ jack_client_t *client;
 
 // only need input to display things
 jack_port_t *input_port;
-// need three ring buffers for ease of reading
-// One for LEDs
-jack_ringbuffer_t *ledbuffer = 0;
-// One for text
-jack_ringbuffer_t *textbuffer = 0;
-// One for meters
-jack_ringbuffer_t *meterbuffer = 0;
+// need ring buffer to go from real time to not.
+jack_ringbuffer_t *midibuffer = 0;
 
 // state globals
 bool master (false);
@@ -62,6 +57,7 @@ char line2_in[57];
 char disp2_in[3];
 char time1_in[14];
 char tm_bt;
+char midichunk[120];
 
 // fltk globals
 Fl_Output line1(5, 5, 564, 20, "");
@@ -155,6 +151,7 @@ class Chan : public Fl_Pack
 {
 private:
 int wx, wy;
+int loopcount = 0;
 char old_lv;
 Fl_Progress *meter;
 ChLed *chled;
@@ -198,8 +195,11 @@ public:
 
 // This decrements the meter to provide fall off
 		void decr (void) {
-			if (old_lv > 0) { old_lv--; }
-			meter->value((float) old_lv);
+			if (++loopcount > 100) {
+				loopcount = 0;
+				if (old_lv > 0) { old_lv--; }
+				meter->value((float) old_lv);
+			}
 		}
 };
 
@@ -429,6 +429,7 @@ static int usage() {
 int process(jack_nframes_t nframes, void *arg)
 {
 	uint i;
+	char sendstring[127];
 	void* port_buf = jack_port_get_buffer(input_port, nframes);
 	jack_midi_event_t in_event;
 	jack_nframes_t event_count = jack_midi_get_event_count(port_buf);
@@ -437,117 +438,21 @@ int process(jack_nframes_t nframes, void *arg)
 		for(i=0; i<event_count; i++)
 		{
 			jack_midi_event_get(&in_event, port_buf, i);
-			/* The events we need are keyon 0-31, and sysexec */
-			if( (*(in_event.buffer)) == 0xf0 )
-			{
-				/* sysex, looking for display info */
-				if( (*(in_event.buffer + 5)) == 0x12)
-				{
-					int availableWrite = jack_ringbuffer_write_space(textbuffer);
-					if (availableWrite >= 8) {
-						int written = jack_ringbuffer_write( textbuffer, (const char*) (in_event.buffer + 6), 8 );
-						if (written != 8 ) {
-							/* only for debug
-							printf("ERROR! Partial textbuffer write");*/
-						}
-					} else {
-					/* only for debug
-						printf("textbuffer full skipping");*/
-					}
+			unsigned int availableWrite = jack_ringbuffer_write_space(midibuffer);
+			if (availableWrite > in_event.size) {
+				sendstring[0] = in_event.size;
+				memcpy (&sendstring[1], in_event.buffer, in_event.size);
+				unsigned int written = jack_ringbuffer_write( midibuffer, (const char*) sendstring, in_event.size + 1);
+				if (written != in_event.size + 1) {
+					// only for debug
+					//cout << "ERROR! Partial midibuffer write\n";
 				}
-
-			} else if( (*(in_event.buffer)) == 0x90 ) {
-				// button press LED returns
-				int availableWrite = jack_ringbuffer_write_space(ledbuffer);
-				if (availableWrite >= 2)
-				{
-					int written = jack_ringbuffer_write( ledbuffer, (const char*) (in_event.buffer + 1), 2 );
-					if (written != 2 ) {
-						/* only use this for debug
-						printf("ERROR! Partial textbuffer write"); */
-					}
-				} else {
-					/* there is no real reason to mess up our display with this text
-					 * unless we are debugging */
-					// printf("textbuffer full skipping");
-				}
-			} else if( (*(in_event.buffer)) == 0xd0 ) {
-				// we have meter info
-				int availableWrite = jack_ringbuffer_write_space(meterbuffer);
-				if (availableWrite >= 1)
-				{
-					int written = jack_ringbuffer_write( meterbuffer, (const char*) (in_event.buffer + 1), 1 );
-					if (written != 1 ) {
-						/* only use this for debug - should be impossible, only one byte
-						printf("ERROR! Partial meterbuffer write"); */
-					}
-				} else {
-					/* there is no real reason to mess up our display with this text
-					 * unless we are debugging */
-					// printf("meterbuffer full skipping");
-				}
-			} else if( (*(in_event.buffer)) == 0xb0 ) {
-				if(master) { // master uses b0 for 7 segment info
-							// also used for vpot return, we should
-							// actively filter it.
-					if ( (*(in_event.buffer+1)) & 0x40) {
-						char data1 = 0x20;
-						if( (*(in_event.buffer+2)) < 0x20 ) {
-							data1 = (*(in_event.buffer+2)) + 0x40;
-							// cludge because some DAWs send @ instead of space
-							if(data1 == 0x40) data1 = 0x20;
-						} else {
-							data1 = (*(in_event.buffer+2));
-						}
-						switch ((*(in_event.buffer+1))) {
-							case 0x4b:	// left assign char
-								disp2_in[0] = data1;
-								break;
-							case 0x4a:	// left assign char
-								disp2_in[1] = data1;
-								break;
-							// timecode stuff, should maybe not be checked
-							// for if not used, if time turned off, no data sent.
-							case 0x49:	// time digit 10 (msb)
-								time1_in[0] = data1;
-								break;
-							case 0x48:	// time digit 9
-								time1_in[1] = data1;
-								break;
-							case 0x47:	// time digit 8
-								time1_in[2] = data1;
-								break;
-							case 0x46:	// time digit 7
-								time1_in[4] = data1;
-								break;
-							case 0x45:	// time digit 6
-								time1_in[5] = data1;
-								break;
-							case 0x44:	// time digit 5
-								time1_in[7] = data1;
-								break;
-							case 0x43:	// time digit 4
-								time1_in[8] = data1;
-								break;
-							case 0x42:	// time digit 3
-								time1_in[10] = data1;
-								break;
-							case 0x41:	// time digit 2
-								time1_in[11] = data1;
-								break;
-							case 0x40:	// time digit 1 (lsb)
-								time1_in[12] = data1;
-								break;
-							default:
-								break;
-						}
-					}
-				}
+			} else {
+				// only for debug
+				// cout << "midibuffer full skipping\n";
 			}
 		}
 	}
-
-
 	return 0;
 }
 
@@ -556,8 +461,7 @@ void close_cb(Fl_Widget*, void*) {
 	printf("Killing child processes..\n");
 	jack_port_unregister(client, input_port);
 	jack_deactivate(client);
-	jack_ringbuffer_free(ledbuffer);
-	jack_ringbuffer_free(textbuffer);
+	jack_ringbuffer_free(midibuffer);
 	jack_client_close(client);
 
 	printf("Done.\n");
@@ -568,8 +472,7 @@ void close_cb(Fl_Widget*, void*) {
 void on_term(int signum) {
 	jack_port_unregister(client, input_port);
 	jack_deactivate(client);
-	jack_ringbuffer_free(ledbuffer);
-	jack_ringbuffer_free(textbuffer);
+	jack_ringbuffer_free(midibuffer);
 	jack_client_close(client);
 	exit(0);
 
@@ -583,10 +486,8 @@ void jack_shutdown(void *arg)
 
 int main(int argc, char** argv)
 {
-	int c;
-	char textbit[9];
 	char jackname[16];
-	int texoff, texi, winsz;
+	int winsz;
 	bool help (false);
 	bool version (false);
 	line1_in[56] = 0x00;
@@ -656,32 +557,16 @@ int main(int argc, char** argv)
 
 	jack_on_shutdown (client, jack_shutdown, 0);
 
-	input_port = jack_port_register (client, "midi_in", JACK_DEFAULT_MIDI_TYPE, (JackPortIsInput | JackPortIsTerminal), 0);
+	input_port = jack_port_register (client, "midi_in", JACK_DEFAULT_MIDI_TYPE, (JackPortIsInput | JackPortIsTerminal | JackPortIsPhysical), 0);
 
-	/* setup LED buffer - All of these may change at once
-		maybe twice close together. */
-	ledbuffer = jack_ringbuffer_create( 1024 );
-	int res = jack_ringbuffer_mlock(ledbuffer);
+	/* set up midi buffer */
+	midibuffer = jack_ringbuffer_create( 16384 );
+	int res = jack_ringbuffer_mlock(midibuffer);
 	if ( res ) {
-		std::cout << "Error locking LED memory!\n";
-		return -1;
-	}
-
-	/* set up display buffer */
-	textbuffer = jack_ringbuffer_create( 4096 );
-	res = jack_ringbuffer_mlock(textbuffer);
-	if ( res ) {
-		std::cout << "Error locking text memory!\n";
+		std::cout << "Error locking midi memory!\n";
         return -1;
 	}
 
-	// buffer for meter events (single byte each)
-	meterbuffer = jack_ringbuffer_create( 1024 );
-	res = jack_ringbuffer_mlock(meterbuffer);
-	if ( res ) {
-		std::cout << "Error locking meter memory!\n";
-		return -1;
-	}
 
 	if (jack_activate (client)) {
 		std::cout << "Error cannot activate client\n";
@@ -761,232 +646,288 @@ int main(int argc, char** argv)
 	{
 		// .03 gives about the right delay for
 		// meters to go from FS to 0 in 1.8 seconds
-		Fl::wait(.03);
-		//Fl::wait(0);
-		//usleep(30000); //Fl::wait already has a timer use it instead
-		/* first do text fields */
-		int availableRead = jack_ringbuffer_read_space(textbuffer);
-		if( availableRead >= 8 ) {
-			textbit[8] = '\x00';
-			int lp = availableRead / 8;
-			for(c=0; c<lp; c++) {
-				int textres = jack_ringbuffer_read(textbuffer, (char*)textbit, 8 );
-				if ( textres != 8 ) {
-					/* this should not happen as we don't try to write
-					to ring buff if there is not 8 bytes of space */
-					std::cout << "\n\nWARNING! didn't read full event!\n";
-					return -1;
-				}
-				texoff = textbit[0]+1;
-				/* top row */
-				if(texoff < 56) {
-					for (texi = 0; texi < 7; texi++) {
-						line1_in[texoff - 1 + texi] = textbit[texi + 1];
-					}
-					line1.value(line1_in);
-				} else {
-					/* bottom row */
-					texoff = texoff - 56;
-					for (texi = 0; texi < 7; texi++) {
-						line2_in[texoff - 1 + texi] = textbit[texi + 1];
-					}
-					line2.value(line2_in);
-				}
-			}
-		}
+		// but we now count to 100 so we can run this loop more often
+		Fl::wait(.0003);
+		// need to make sure we get all the the midi events
+		int availableMidi (1);
+		while (availableMidi) {
+		// make sure there is at least one byte available
+		availableMidi = jack_ringbuffer_read_space(midibuffer);
+		if( availableMidi > 0 ) {
+			char bytes (0);
+			int read = jack_ringbuffer_read(midibuffer, &bytes, 1 );
+			if (read) {
+				availableMidi = jack_ringbuffer_read_space(midibuffer);
+				if( availableMidi >= bytes ) {
+					int read = jack_ringbuffer_read(midibuffer, (char*)midichunk, bytes);
+					if (read == bytes) {
+						// parse events next
+						switch ((unsigned char) midichunk[0]) {
+						case 0xf0:
+							if (midichunk[5] == 0x12) {
+								// display stuff
+								int offset = midichunk[6];
+								if (offset < 56) {
+									if ((bytes - 8 + offset) < 57) {
+										memcpy(&line1_in[offset], &midichunk[7], bytes - 8);
+										line1.value(line1_in);
+									} else {
+										memcpy(&line1_in[offset], &midichunk[7], 56 - offset);
+										line1.value(line1_in);
+										memcpy(&line2_in[0], &midichunk[7 + (55 - offset)], bytes - (56 - offset));
+										line2.value(line2_in);
+									}
+								} else {
+									offset = offset - 56;
+									if ((bytes - 8 + offset) < 57) {
+										memcpy(&line2_in[offset], &midichunk[7], bytes - 8);
+										line2.value(line2_in);
+									} else {
+										memcpy(&line2_in[offset], &midichunk[7], 56 - offset);
+										line2.value(line2_in);
+									}
+								}
+							}
+							break;
+						case 0x90:
+							// now display "Lamps"
+							//these are button events
+							if( midichunk[1] < 8 ) {
+								if (midichunk[2] == 0) {
+									chan[(int) midichunk[1]]->rec(false);
+								} else {
+									chan[(int)midichunk[1]]->rec(true);
+								}
+							} else if ( midichunk[1] < 16 ) {
+								/* Lamps 8 - 15 are PFL (Solo?) buttons */
+								if (midichunk[2] == 0) {
+									chan[(int) midichunk[1] - 8]->sol(false);
+								} else {
+									chan[(int) midichunk[1] - 8]->sol(true);
+								}
+							} else if ( midichunk[1] < 24 ) {
+								/* Lamps 16 - 23 are Mute buttons */
+								if (midichunk[2] == 0) {
+									chan[(int) midichunk[1] - 16]->mute(false);
+								} else {
+									chan[(int) midichunk[1] - 16]->mute(true);
+								}
+							} else if ( midichunk[1] < 32 ) {
+								/* Lamps 24 - 31 are channel select indicators */
+								if (midichunk[2] == 0) {
+									chan[(int) midichunk[1] - 24]->sel(false);
+								} else {
+									chan[(int) midichunk[1] - 24]->sel(true);
+								}
+							} else if (master) { // anything else is a master
 
-		/* now display "Lamps" */
-		availableRead = jack_ringbuffer_read_space(ledbuffer);
-		if( availableRead >= 2 ) {
-			int lp = availableRead / 2;
-			for(c=0; c<lp; c++) {
-				int ledres = jack_ringbuffer_read(ledbuffer, (char*)textbit, 2 );
-				if ( ledres != 2 ) {
-					std::cout << "WARNING! didn't read full event!/n";
-					return -1;
-				}
-				/* Lamps 0 - 7 are Record enable */
-				if( textbit[0] < 8 ) {
-					if (textbit[1] == 0) {
-						chan[(int) textbit[0]]->rec(false);
-					} else {
-						chan[(int)textbit[0]]->rec(true);
-					}
-				} else if ( textbit[0] < 16 ) {
-					/* Lamps 8 - 15 are PFL (Solo?) buttons */
-					if (textbit[1] == 0) {
-						chan[(int) textbit[0] - 8]->sol(false);
-					} else {
-						chan[(int) textbit[0] - 8]->sol(true);
-					}
-				} else if ( textbit[0] < 24 ) {
-					/* Lamps 16 - 23 are Mute buttons */
-					if (textbit[1] == 0) {
-						chan[(int) textbit[0] - 16]->mute(false);
-					} else {
-						chan[(int) textbit[0] - 16]->mute(true);
-					}
-				} else if ( textbit[0] < 32 ) {
-					/* Lamps 24 - 31 are channel select indicators */
-					if (textbit[1] == 0) {
-						chan[(int) textbit[0] - 24]->sel(false);
-					} else {
-						chan[(int) textbit[0] - 24]->sel(true);
-					}
-				} else if (master) { // anything else is a master
-					switch ((int) textbit[0]) { // always do transport
-						case 0x5b:
-							// rewind «⏪
-							transport->rw(textbit[1]);
+								switch ((unsigned char) midichunk[1]) {
+								case 0x5b:
+									// rewind «⏪
+									transport->rw(midichunk[2]);
+									break;
+								case 0x5c:
+									// fwd »⏩
+									transport->ff(midichunk[2]);
+									break;
+								case 0x5d:
+									transport->stop(midichunk[2]);
+									// stop∎■⬛
+									break;
+								case 0x5e:
+									// play‣▶
+									transport->play(midichunk[2]);
+									break;
+								case 0x5f:
+									// master record enable
+									transport->rec(midichunk[2]);
+									break;
+								case 0x73:
+									transport->solo(midichunk[2]);
+									// solo
+									break;
+								case 0x32:
+									transport->flip(midichunk[2]);
+									// Flip
+									break;
+								case 0x33:
+									// global view
+									transport->view(midichunk[2]);
+									break;
+								case 0x28:
+									// track (Trim)
+									transport->track(midichunk[2]);
+									break;
+								case 0x29:
+									// Send
+									transport->send(midichunk[2]);
+									break;
+								case 0x2a:
+									// Pan
+									transport->pan(midichunk[2]);
+									break;
+								case 0x2b:
+									// Plug-in
+									transport->plug(midichunk[2]);
+									break;
+								case 0x2c:
+									// EQ
+									transport->eq(midichunk[2]);
+									break;
+								case 0x2d:
+									// Instrument
+									transport->inst(midichunk[2]);
+									break;
+								// these next two are really shotime only, but don't hurt anything
+								case 0x72:	// time display is time
+									if(midichunk[2] == 0) tm_bt = ':';
+									break;
+								case 0x71:	// time display is beats and bars
+									if(midichunk[2] == 0) tm_bt = '|';
+									break;
+								default:
+								break;
+							}
+							if (!shotime) {
+								// if time is off we have room for more lamps
+								// some day I might even add them  :)
+								switch ((int) midichunk[1]) {
+								case 0x4a:
+									// read/off
+								case 0x4b:
+									// write
+								case 0x4c:
+									// trim (not trim pot)
+								case 0x4d:
+									// touch
+								case 0x4e:
+									// latch
+								case 0x4f:
+									// group
+								case 0x50:
+									//save
+								case 0x51:
+									// undo
+								case 0x54:
+									// marker
+								case 0x55:
+									// nudge
+								case 0x56:
+									// cycle
+								case 0x57:
+									// drop
+								case 0x58:
+									// replace
+								case 0x59:
+									// click
+								case 0x64:
+									// zoom
+								case 0x65:
+									// scrub
+								default:
+									break;
+								}
+							}
+						}
 							break;
-						case 0x5c:
-							// fwd »⏩
-							transport->ff(textbit[1]);
-							break;
-						case 0x5d:
-							transport->stop(textbit[1]);
-							// stop∎■⬛
-							break;
-						case 0x5e:
-							// play‣▶
-							transport->play(textbit[1]);
-							break;
-						case 0x5f:
-							// master record enable
-							transport->rec(textbit[1]);
-							break;
-						case 0x73:
-							transport->solo(textbit[1]);
-							// solo
-							break;
-						case 0x32:
-							transport->flip(textbit[1]);
-							// Flip
-							break;
-						case 0x33:
-							// global view
-							transport->view(textbit[1]);
-							break;
-						case 0x28:
-							// track (Trim)
-							transport->track(textbit[1]);
-							break;
-						case 0x29:
-							// Send
-							transport->send(textbit[1]);
-							break;
-						case 0x2a:
-							// Pan
-							transport->pan(textbit[1]);
-							break;
-						case 0x2b:
-							// Plug-in
-							transport->plug(textbit[1]);
-							break;
-						case 0x2c:
-							// EQ
-							transport->eq(textbit[1]);
-							break;
-						case 0x2d:
-							// Instrument
-							transport->inst(textbit[1]);
-							break;
-						// these next two are really shotime only, but don't hurt anything
-						case 0x72:	// time display is time
-							if(textbit[1] == 0) tm_bt = ':';
-							break;
-						case 0x71:	// time display is beats and bars
-							if(textbit[1] == 0) tm_bt = '|';
-							break;
+						case 0xd0:
+							// this is meters
+							int chm; // meter channel
+							int mval; // meter value
+							// divide into chm and mval
+							mval = midichunk[1] & 0x0f;
+							chm = midichunk[1] >> 4;
+							if (mval == 0x0e) {
+								chan[(int)chm]->peak(true);
+								chan[(int)chm]->level(0x0c);
+							} else if (mval == 0x0f) {
+								chan[(int)chm]->peak(false);
+							} else {
+								chan[(int)chm]->level(mval);
+							}
+						case 0xb0:
+							if (master) {
+								// timecode
+								if (midichunk[1] & 0x40) {
+									char data1 = 0x20;
+									if( midichunk[2] < 0x20 ) {
+										data1 = midichunk[2] + 0x40;
+										// cludge because some DAWs send @ instead of space
+										if(data1 == 0x40) data1 = 0x20;
+									} else {
+										data1 = midichunk[2];
+									}
+									switch (midichunk[1]) {
+									case 0x4b:	// left assign char
+										disp2_in[0] = data1;
+										disp2.value(disp2_in);
+										break;
+									case 0x4a:	// left assign char
+										disp2_in[1] = data1;
+										disp2.value(disp2_in);
+										break;
+									// timecode stuff, should maybe not be checked
+									// for if not used, if time turned off, no data sent.
+									case 0x49:	// time digit 10 (msb)
+										time1_in[0] = data1;
+										break;
+									case 0x48:	// time digit 9
+										time1_in[1] = data1;
+										break;
+									case 0x47:	// time digit 8
+										time1_in[2] = data1;
+										break;
+									case 0x46:	// time digit 7
+										time1_in[4] = data1;
+										break;
+									case 0x45:	// time digit 6
+										time1_in[5] = data1;
+										break;
+									case 0x44:	// time digit 5
+										time1_in[7] = data1;
+										break;
+									case 0x43:	// time digit 4
+										time1_in[8] = data1;
+										break;
+									case 0x42:	// time digit 3
+										time1_in[10] = data1;
+										break;
+									case 0x41:	// time digit 2
+										time1_in[11] = data1;
+										break;
+									case 0x40:	// time digit 1 (lsb)
+										time1_in[12] = data1;
+										break;
+									default:
+										break;
+									}
+									if(shotime) {
+									// insert | for beats or : for time.
+									// this is odd, we should only do this when mode switches
+									time1_in[3] = tm_bt;
+									time1_in[6] = tm_bt;
+									time1_in[9] = tm_bt;
+									// diplay time.
+									time1.value(time1_in);
+									}
+								}
+
+							}
+
 						default:
 							break;
-					}
-				} else if (master && !shotime) {
-					// if time is off we have room for more lamps
-					switch ((int) textbit[0]) {
-						case 0x4a:
-							// read/off
-						case 0x4b:
-							// write
-						case 0x4c:
-							// trim (not trim pot)
-						case 0x4d:
-							// touch
-						case 0x4e:
-							// latch
-						case 0x4f:
-							// group
-						case 0x50:
-							//save
-						case 0x51:
-							// undo
-						case 0x54:
-							// marker
-						case 0x55:
-							// nudge
-						case 0x56:
-							// cycle
-						case 0x57:
-							// drop
-						case 0x58:
-							// replace
-						case 0x59:
-							// click
-						case 0x64:
-							// zoom
-						case 0x65:
-							// scrub
-						default:
-							break;
+						}
 					}
 				}
 			}
 		}
+		} // too lazy to reindent all  :)
 
-		//metering should go here
-		availableRead = jack_ringbuffer_read_space(meterbuffer);
-		if( availableRead >= 1 ) {
-			int lp = availableRead;
-			int chm = 0;
-			int mval = 0;
-			for(c=0; c<lp; c++) {
-				int metres = jack_ringbuffer_read(meterbuffer, (char*)textbit, 1 );
-				if ( metres != 1 ) {
-					std::cout << "WARNING! didn't read full event!/n";
-					return -1;
-				}
-				// divide into chm and mval
-				mval = textbit[0] & 0x0f;
-				chm = textbit[0] >> 4;
-				if (mval == 0x0e) {
-					chan[(int)chm]->peak(true);
-					chan[(int)chm]->level(0x0c);
-				} else if (mval == 0x0f) {
-					chan[(int)chm]->peak(false);
-				} else {
-					chan[(int)chm]->level(mval);
-				}
-			}
-		} else {
-			//tell meters to decrement
-			for (int i = 0; i < 8; i++) {
-				chan[i]->decr();
-			}
+		//tell meters to decrement
+		for (int i = 0; i < 8; i++) {
+			chan[i]->decr();
 		}
 
-		if(master) {
-			// display assign value
-			disp2.value(disp2_in);
-			if(shotime) {
-				// insert | for beats or : for time.
-				// this is odd, we should only do this when mode switches
-				time1_in[3] = tm_bt;
-				time1_in[6] = tm_bt;
-				time1_in[9] = tm_bt;
-				// diplay time.
-				time1.value(time1_in);
-			}
-		}
 
 	}
 	std::cout << "after while\n";

@@ -12,6 +12,9 @@ mcpdisp (0.0.5) prerelease
   * Start work on global buttons, moved SMPT/beats out of real time.
   * Finished Transport LEDs and flip, assign and View LEDs.
   * Set MIDI in port to type Terminal.
+  * Set Display in to accept whole display of text at a time.
+  * Move midi parsing out of real time.
+  * Only update time/beats when new time/beat data comes in.
 
  -- Len Ovens <len@music>  Mon Oct 12 07:55:20 2015 -0700
 
