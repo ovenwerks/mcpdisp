@@ -417,6 +417,8 @@ static int usage() {
 	"        -h, --help              Show this help text\n"
 	"        -m, --master            Show master portion of display\n"
 	"        -t, --time              Show Clock if master enabled\n"
+	"        -x <x>                  Start mcpdisp at x\n"
+	"        -y <y>                  Start mcpdisp at y\n"
 	"        -V, --version           Show version information\n\n"
 	, VERSION);
 
@@ -488,6 +490,8 @@ int main(int argc, char** argv)
 {
 	char jackname[16];
 	int winsz;
+	int win_x = 2000; // default to lower right corner of a single screen
+	int win_y = 1000;
 	bool help (false);
 	bool version (false);
 	line1_in[56] = 0x00;
@@ -504,13 +508,15 @@ int main(int argc, char** argv)
 	{ "help", no_argument, 0, 'h' },
 	{ "master", no_argument, 0, 'm' },
 	{ "time", no_argument, 0, 't' },
+	{ "xpos", required_argument, 0, 'x' },
+	{ "ypos", required_argument, 0, 'y' },
 	{ "version", no_argument, 0, 'V' },
 	};
 
 	while (1) {
 	int c, option_index = 0;
 
-	c = getopt_long (argc, argv, "hmtV", options, &option_index);
+	c = getopt_long (argc, argv, "hmtx:y:V", options, &option_index);
 	if (c == -1)
 		break;
 
@@ -523,6 +529,22 @@ int main(int argc, char** argv)
 			break;
 		case 't':
 			shotime = true;
+			break;
+		case 'x':
+			if (optarg) {
+				win_x = stoi(strdup(optarg), 0, 10);
+			} else {
+				usage();
+				return -1;
+			}
+			break;
+		case 'y':
+			if (optarg) {
+				win_y = stoi(strdup(optarg), 0, 10);
+			} else {
+				usage();
+				return -1;
+			}
 			break;
 		case 'V':
 			version = true;
@@ -595,7 +617,7 @@ int main(int argc, char** argv)
 	} else {
 		winsz = 574;
 	}
-	Fl_Window win (4000, 4000, winsz, 75, wname);
+	Fl_Window win (win_x, win_y, winsz, 75, wname);
 	win.callback(close_cb);
 	win.color(56);
 		win.begin();
