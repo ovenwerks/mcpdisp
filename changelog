@@ -3,8 +3,9 @@ mcpdisp (0.0.5) unreleased
   * Added -x and -y command line arguments for window placement.
   * Updated README.md to add above change.
   * Updated INSTALL file to add reference to fltk depends.
+  * Accept sysex version of time as well (not tested).
 
-  -- Len Ovens <len@ovenwerks.net> Fri Nov 27 10:31:58 2015 -0800
+  -- Len Ovens <len@ovenwerks.net> Wed Dec 9 09:51:22 2015 -0800
 
 mcpdisp (0.0.5) released
 

@@ -709,6 +709,20 @@ int main(int argc, char** argv)
 										line2.value(line2_in);
 									}
 								}
+							} else if (midichunk[5] == 0x10) {
+								// time code all at once
+								int p = 12;
+								for (int i = 6; i < 16; i++) {
+									time1_in[p] = midichunk[i] & 0x03;
+									if (time1_in[p] == 0x00) {
+										time1_in[p] = 0x20;
+									}
+									if (p == 10 || p == 7 || p == 4) {
+										// skip position 9,6 and 3
+										p--;
+									}
+									p--;
+								}
 							}
 							break;
 						case 0x90:
