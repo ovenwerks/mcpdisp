@@ -6,6 +6,9 @@ everything needed with the exception of libjack. There is probably a package
 called libjack-dev (if you are using jackd1) or libjack-jackd2-dev (if you
 are using jackd2 or jackdbus) in your distro you will need.
 
+Scratch that, fltk1.3 or higher is needed too. So on a debian based (Ubuntu)
+system install libfltk1.3-dev and that will grab what you need.
+
 So:
 
 make
