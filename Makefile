@@ -32,6 +32,7 @@ mcpdisp: mcpdisp.o -ljack -lfltk
 install: all
 	install -D -m755 mcpdisp $(bindir)/mcpdisp
 	install -D -m644 mcpdisp.desktop $(prefix)/share/applications/mcpdisp.desktop
+	install -D -m644 mcpdisp-ext.desktop $(prefix)/share/applications/mcpdisp-ext.desktop
 	install -D -m644 mcpdisp.svg $(prefix)/share/icons/hicolor/scalable/apps/mcpdisp.svg
 
 

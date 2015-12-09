@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=mcpdisp-ext
+GenericName=mcpdisp-ext
+Comment=Mackie Control Surface Emulator extender
+Icon=mcpdisp
+Exec=mcpdisp
+Terminal=false
+Categories=AudioVideo;Audio;Midi;
