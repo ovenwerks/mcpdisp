@@ -677,17 +677,21 @@ int main(int argc, char** argv)
 		availableMidi = jack_ringbuffer_read_space(midibuffer);
 		if( availableMidi > 0 ) {
 			char bytes (0);
-			int read = jack_ringbuffer_read(midibuffer, &bytes, 1 );
+			// just peek at it in case read space is < bytes
+			int read = jack_ringbuffer_peek(midibuffer, &bytes, 1 );
 			if (read) {
+				// this is painful need to make function calls for each event type
 				availableMidi = jack_ringbuffer_read_space(midibuffer);
 				if( availableMidi >= bytes ) {
-					int read = jack_ringbuffer_read(midibuffer, (char*)midichunk, bytes);
+					// first read one byte to to set pointer then read data
+					int read = jack_ringbuffer_read(midibuffer, &bytes, 1 );
+					read = jack_ringbuffer_read(midibuffer, (char*)midichunk, bytes);
 					if (read == bytes) {
 						// parse events next
 						switch ((unsigned char) midichunk[0]) {
 						case 0xf0:
 							if (midichunk[5] == 0x12) {
-								// display stuff
+								// display stuff (should be a function)
 								int offset = midichunk[6];
 								if (offset < 56) {
 									if ((bytes - 8 + offset) < 57) {
@@ -710,7 +714,7 @@ int main(int argc, char** argv)
 									}
 								}
 							} else if (midichunk[5] == 0x10) {
-								// time code all at once
+								// time code all at once Should be a function
 								int p = 12;
 								for (int i = 6; i < 16; i++) {
 									time1_in[p] = midichunk[i] & 0x03;
@@ -727,7 +731,7 @@ int main(int argc, char** argv)
 							break;
 						case 0x90:
 							// now display "Lamps"
-							//these are button events
+							//these are button events (make function)
 							if( midichunk[1] < 8 ) {
 								if (midichunk[2] == 0) {
 									chan[(int) midichunk[1]]->rec(false);
@@ -867,7 +871,7 @@ int main(int argc, char** argv)
 						}
 							break;
 						case 0xd0:
-							// this is meters
+							// this is meters (make function)
 							int chm; // meter channel
 							int mval; // meter value
 							// divide into chm and mval
@@ -882,6 +886,7 @@ int main(int argc, char** argv)
 								chan[(int)chm]->level(mval);
 							}
 						case 0xb0:
+							// make function
 							if (master) {
 								// timecode
 								if (midichunk[1] & 0x40) {
