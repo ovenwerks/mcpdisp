@@ -5,8 +5,9 @@ mcpdisp (0.0.6) unreleased
   * Updated INSTALL file to add reference to fltk depends.
   * Accept sysex version of time as well (not tested).
   * Added extender desktop file.
+  * Fix a bug where some midi events may be skipped or mutilated.
 
-  -- Len Ovens <len@ovenwerks.net> Wed Dec 9 09:51:22 2015 -0800
+  -- Len Ovens <len@ovenwerks.net> Sat Dec 12 09:29:39 2015 -0800
 
 mcpdisp (0.0.5) released
 
