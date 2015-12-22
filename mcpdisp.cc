@@ -579,7 +579,12 @@ int main(int argc, char** argv)
 
 	jack_on_shutdown (client, jack_shutdown, 0);
 
-	input_port = jack_port_register (client, "midi_in", JACK_DEFAULT_MIDI_TYPE, (JackPortIsInput | JackPortIsTerminal | JackPortIsPhysical), 0);
+	char *jname = jack_get_client_name (client);
+	char pname[16];
+	strcpy (pname, jname);
+	strcat (pname, "_in");
+
+	input_port = jack_port_register (client, pname, JACK_DEFAULT_MIDI_TYPE, (JackPortIsInput | JackPortIsTerminal | JackPortIsPhysical), 0);
 
 	/* set up midi buffer */
 	midibuffer = jack_ringbuffer_create( 16384 );
@@ -606,7 +611,6 @@ int main(int argc, char** argv)
 	signal(SIGABRT, on_term);
 
 
-	char *jname = jack_get_client_name (client);
 	strcpy (wname,"Mackie Control Display Emulator - ");
 	// add jack port name to window title
 	strcat (wname, jname);
