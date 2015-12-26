@@ -35,7 +35,7 @@
 #include <FL/Fl_Pack.H>
 #include <FL/Fl_Progress.H>
 
-#define VERSION "pre-0.0.5"
+#define VERSION "pre-0.0.6"
 
 using namespace std;
 
@@ -44,7 +44,9 @@ jack_client_t *client;
 
 // only need input to display things
 jack_port_t *input_port;
-// need ring buffer to go from real time to not.
+// well, lets add a thru port to feed the surface
+jack_port_t *thru_port;
+// need ring buffer to go from real time to not
 jack_ringbuffer_t *midibuffer = 0;
 
 // state globals
@@ -417,8 +419,8 @@ static int usage() {
 	"        -h, --help              Show this help text\n"
 	"        -m, --master            Show master portion of display\n"
 	"        -t, --time              Show Clock if master enabled\n"
-	"        -x <x>                  Start mcpdisp at x\n"
-	"        -y <y>                  Start mcpdisp at y\n"
+	"        -x <x>                  Place mcpdisp at x position\n"
+	"        -y <y>                  place mcpdisp at y position\n"
 	"        -V, --version           Show version information\n\n"
 	, VERSION);
 
@@ -433,6 +435,10 @@ int process(jack_nframes_t nframes, void *arg)
 	uint i;
 	char sendstring[127];
 	void* port_buf = jack_port_get_buffer(input_port, nframes);
+	void* thru_buf = jack_port_get_buffer(thru_port, nframes);
+	unsigned char* buffer;
+	jack_midi_clear_buffer(thru_buf);
+
 	jack_midi_event_t in_event;
 	jack_nframes_t event_count = jack_midi_get_event_count(port_buf);
 	if(event_count > 0)
@@ -440,6 +446,10 @@ int process(jack_nframes_t nframes, void *arg)
 		for(i=0; i<event_count; i++)
 		{
 			jack_midi_event_get(&in_event, port_buf, i);
+			// send event to through here
+			buffer = jack_midi_event_reserve(thru_buf, 0, in_event.size);
+			memcpy (buffer, in_event.buffer, in_event.size);
+
 			unsigned int availableWrite = jack_ringbuffer_write_space(midibuffer);
 			if (availableWrite > in_event.size) {
 				sendstring[0] = in_event.size;
@@ -462,6 +472,7 @@ int process(jack_nframes_t nframes, void *arg)
 void close_cb(Fl_Widget*, void*) {
 	printf("Killing child processes..\n");
 	jack_port_unregister(client, input_port);
+	jack_port_unregister(client, thru_port);
 	jack_deactivate(client);
 	jack_ringbuffer_free(midibuffer);
 	jack_client_close(client);
@@ -473,6 +484,7 @@ void close_cb(Fl_Widget*, void*) {
 /* I don't know which of these are actually needed, but it ends nice */
 void on_term(int signum) {
 	jack_port_unregister(client, input_port);
+	jack_port_unregister(client, thru_port);
 	jack_deactivate(client);
 	jack_ringbuffer_free(midibuffer);
 	jack_client_close(client);
@@ -585,6 +597,9 @@ int main(int argc, char** argv)
 	strcat (pname, "_in");
 
 	input_port = jack_port_register (client, pname, JACK_DEFAULT_MIDI_TYPE, (JackPortIsInput | JackPortIsTerminal | JackPortIsPhysical), 0);
+	strcpy (pname, jname);
+	strcat (pname, "_out");
+	thru_port = jack_port_register (client, pname, JACK_DEFAULT_MIDI_TYPE, JackPortIsOutput, 0);
 
 	/* set up midi buffer */
 	midibuffer = jack_ringbuffer_create( 16384 );

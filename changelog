@@ -6,6 +6,7 @@ mcpdisp (0.0.6) unreleased
   * Accept sysex version of time as well (not tested).
   * Added extender desktop file.
   * Fix a bug where some midi events may be skipped or mutilated.
+  * Add a Thru port so only one input needs to connected to daw.
 
   -- Len Ovens <len@ovenwerks.net> Sat Dec 12 09:29:39 2015 -0800
 
