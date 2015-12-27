@@ -35,7 +35,7 @@
 #include <FL/Fl_Pack.H>
 #include <FL/Fl_Progress.H>
 
-#define VERSION "pre-0.0.6"
+#define VERSION "0.0.6"
 
 using namespace std;
 

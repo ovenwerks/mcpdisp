@@ -1,4 +1,4 @@
-mcpdisp (0.0.6) unreleased
+mcpdisp (0.0.6) released
 
   * Added -x and -y command line arguments for window placement.
   * Updated README.md to add above change.
@@ -7,8 +7,9 @@ mcpdisp (0.0.6) unreleased
   * Added extender desktop file.
   * Fix a bug where some midi events may be skipped or mutilated.
   * Add a Thru port so only one input needs to connected to daw.
+  * Release version 0.0.6
 
-  -- Len Ovens <len@ovenwerks.net> Sat Dec 12 09:29:39 2015 -0800
+  -- Len Ovens <len@ovenwerks.net> Sat Dec 26 17:04:50 2015 -0800
 
 mcpdisp (0.0.5) released
 
