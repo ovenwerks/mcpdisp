@@ -1,3 +1,10 @@
+mcpdisp (0.0.7) unreleased
+
+  * Timeout Peak indication so it doesn't remain forever.
+  * Fix timecode initialization bug.
+
+  -- Len Ovens <len@ovenwerks.net> Sat Dec 26 17:47:50 2015 -0800
+
 mcpdisp (0.0.6) released
 
   * Added -x and -y command line arguments for window placement.
@@ -6,6 +13,7 @@ mcpdisp (0.0.6) released
   * Accept sysex version of time as well (not tested).
   * Added extender desktop file.
   * Fix a bug where some midi events may be skipped or mutilated.
+  * Changed port names to match client name.
   * Add a Thru port so only one input needs to connected to daw.
   * Release version 0.0.6
 

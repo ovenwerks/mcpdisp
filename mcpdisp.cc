@@ -35,7 +35,7 @@
 #include <FL/Fl_Pack.H>
 #include <FL/Fl_Progress.H>
 
-#define VERSION "0.0.6"
+#define VERSION "pre-0.0.7"
 
 using namespace std;
 
@@ -201,6 +201,9 @@ public:
 				loopcount = 0;
 				if (old_lv > 0) { old_lv--; }
 				meter->value((float) old_lv);
+				if (!old_lv) {
+					peak (false);
+				}
 			}
 		}
 };
@@ -448,7 +451,6 @@ int process(jack_nframes_t nframes, void *arg)
 			jack_midi_event_get(&in_event, port_buf, i);
 			// send event to through here
 			buffer = jack_midi_event_reserve(thru_buf, 0, in_event.size);
-			memcpy (buffer, in_event.buffer, in_event.size);
 
 			unsigned int availableWrite = jack_ringbuffer_write_space(midibuffer);
 			if (availableWrite > in_event.size) {
@@ -463,6 +465,7 @@ int process(jack_nframes_t nframes, void *arg)
 				// only for debug
 				// cout << "midibuffer full skipping\n";
 			}
+			memcpy (buffer, in_event.buffer, in_event.size);
 		}
 	}
 	return 0;
@@ -510,6 +513,8 @@ int main(int argc, char** argv)
 	line2_in[56] = 0x00;
 	disp2_in[2] = 0x00;
 	time1_in[13] = 0x00;
+//	strcpy(time1_in, "000|00| 0|000");
+	strcpy(time1_in, "             ");
 	tm_bt = '|';
 	Chan *chan[8];
 	char wname[64];
@@ -904,6 +909,7 @@ int main(int argc, char** argv)
 							} else {
 								chan[(int)chm]->level(mval);
 							}
+							break;
 						case 0xb0:
 							// make function
 							if (master) {
