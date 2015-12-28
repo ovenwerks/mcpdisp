@@ -4,7 +4,7 @@ mcpdisp (0.0.7) unreleased
   * Fix timecode initialization bug.
   * Renamed out port to _thru to give better user info.
 
-  -- Len Ovens <len@ovenwerks.net> Sat Dec 26 17:47:50 2015 -0800
+  -- Len Ovens <len@ovenwerks.net> Mon Dec 28 11:46:35 2015 -0800
 
 mcpdisp (0.0.6) released
 
