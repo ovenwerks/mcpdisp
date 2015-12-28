@@ -603,7 +603,7 @@ int main(int argc, char** argv)
 
 	input_port = jack_port_register (client, pname, JACK_DEFAULT_MIDI_TYPE, (JackPortIsInput | JackPortIsTerminal | JackPortIsPhysical), 0);
 	strcpy (pname, jname);
-	strcat (pname, "_out");
+	strcat (pname, "_thru");
 	thru_port = jack_port_register (client, pname, JACK_DEFAULT_MIDI_TYPE, JackPortIsOutput, 0);
 
 	/* set up midi buffer */
