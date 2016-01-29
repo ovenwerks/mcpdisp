@@ -32,6 +32,7 @@
 #include <FL/Fl.H>
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Output.H>
+#include <FL/Fl_Box.H>
 #include <FL/Fl_Pack.H>
 #include <FL/Fl_Progress.H>
 
@@ -52,6 +53,7 @@ jack_ringbuffer_t *midibuffer = 0;
 // state globals
 bool master (false);
 bool shotime (false);
+unsigned int siz (3);
 
 // text globals
 char line1_in[57];
@@ -61,12 +63,6 @@ char time1_in[14];
 char tm_bt;
 char midichunk[120];
 
-// fltk globals
-Fl_Output line1(5, 5, 564, 20, "");
-Fl_Output line2(5, 25, 564, 20, "");
-Fl_Output disp2(570, 5, 59, 40, "");
-Fl_Output time1(630, 5, 330,40, "");
-
 class ChLed : public Fl_Pack
 {
 private:
@@ -75,23 +71,26 @@ Fl_Output *led_R;
 Fl_Output *led_S;
 Fl_Output *led_M;
 Fl_Output *led_W;
+Fl_Box *space;
 public:
 
 		ChLed(int wx, int wy) :
-		Fl_Pack(wx, wy, 60, 20, "")
+		Fl_Pack(wx, wy, siz * 23, siz * 7, "")
 		{
 		color(57);
 		type(Fl_Pack::HORIZONTAL);
 		begin();
-			led_R = new Fl_Output(5, 50, 15, 20, "");
+			space = new Fl_Box (0, 0, siz + 1, siz * 7, "");
+			space->color (56);
+			led_R = new Fl_Output (0, 0, siz * 5, siz * 7, "");
 			led_R->color(57);
-			led_S = new Fl_Output(20, 50, 15, 20, "");
+			led_S = new Fl_Output (0, 0, siz * 5, siz * 7, "");
 			led_S->color(57);
-			led_M = new Fl_Output(35, 50, 15, 20, "");
+			led_M = new Fl_Output (0, 0, siz * 5, siz * 7, "");
 			led_M->color(57);
-			led_W = new Fl_Output(50, 50, 15, 20, "");
+			led_W = new Fl_Output (0, 0, siz * 5, siz * 7, "");
 			led_W->color(57);
-			led_W->textcolor(FL_RED);
+			led_W->textcolor (FL_RED);
 		end();
 		show();
 		}
@@ -148,7 +147,7 @@ void peak (bool pk) {
 
 };
 
-// channel combines a channel LED pack with a meter
+// channel combines a channel LED pack with a meter and chanel display
 class Chan : public Fl_Pack
 {
 private:
@@ -156,16 +155,28 @@ int wx, wy;
 int loopcount = 0;
 char old_lv;
 Fl_Progress *meter;
+Fl_Output *top_disp;
+Fl_Output *low_disp;
 ChLed *chled;
 public:
-		Chan(int wx, int wy) :
-		Fl_Pack(wx, wy, 60, 25, "")
-		{
+	Chan(int wx, int wy) :
+	Fl_Pack(wx, wy, siz * 23, siz * 8, "")
+	{
 		color(57);
 		begin();
+			top_disp = new Fl_Output (0, 0, siz * 23, siz * 7, "");
+			top_disp->color(57);
+			top_disp->textfont(4);
+			top_disp->textcolor(181);
+			top_disp->textsize(siz * 5);
+			low_disp = new Fl_Output (0, 0, siz * 23, siz * 7, "");
+			low_disp->color(57);
+			low_disp->textfont(4);
+			low_disp->textcolor(181);
+			low_disp->textsize(siz * 5);
 			chled = new ChLed(0, 0);
 			chled->color(57); // do I need this?
-			meter = new Fl_Progress(0, 20, 60, 10, "");
+			meter = new Fl_Progress(0, 0, siz * 20, siz * 4, "");
 			meter->color(57);
 			meter->maximum(12.0);
 			meter->minimum(0.0);
@@ -173,39 +184,48 @@ public:
 			old_lv = 12;
 		end();
 		show();
+	}
+
+	void top (char* line)
+	{
+		top_disp->value(line);
+	}
+
+	void low (char* line)
+	{
+		low_disp->value(line);
+	}
+
+	// these just map chled stuff straight through
+	void rec (bool rst) {chled->rec(rst);}
+	void sol (bool sst) {chled->sol(sst);}
+	void mute (bool mst) {chled->mute(mst);}
+	void sel (bool sest) {chled->sel(sest);}
+	void peak (bool pk) {chled->peak(pk);}
+
+	// This sets the meter level
+	void level (char lv) {
+		if (lv >= old_lv) {
+			if (lv < 13) {
+				meter->value((float) lv);
+				old_lv = lv;
+			}
+		} else {
+			decr();
 		}
+	}
 
-// these just map chled stuff straight through
-// There is probably a better way :)
-		void rec (bool rst) {chled->rec(rst);}
-		void sol (bool sst) {chled->sol(sst);}
-		void mute (bool mst) {chled->mute(mst);}
-		void sel (bool sest) {chled->sel(sest);}
-		void peak (bool pk) {chled->peak(pk);}
-
-// This sets the meter level
-		void level (char lv) {
-			if (lv >= old_lv) {
-				if (lv < 13) {
-					meter->value((float) lv);
-					old_lv = lv;
-				}
-			} else {
-				decr();
+	// This decrements the meter to provide fall off
+	void decr (void) {
+		if (++loopcount > 10) {
+			loopcount = 0;
+			if (old_lv > 0) { old_lv--; }
+			meter->value((float) old_lv);
+			if (!old_lv) {
+				peak (false);
 			}
 		}
-
-// This decrements the meter to provide fall off
-		void decr (void) {
-			if (++loopcount > 100) {
-				loopcount = 0;
-				if (old_lv > 0) { old_lv--; }
-				meter->value((float) old_lv);
-				if (!old_lv) {
-					peak (false);
-				}
-			}
-		}
+	}
 };
 
 // transport
@@ -225,54 +245,54 @@ Fl_Output *View;
 public:
 
 		Transport(int wx, int wy) :
-		Fl_Pack(wx, wy, 250, 30, "")
+		Fl_Pack(wx, wy, siz * 83, siz * 10, "")
 		{
 		color(57);
 		type(Fl_Pack::HORIZONTAL);
 		begin();
-			RW = new Fl_Output(1, 1, 26, 30, "");
+			RW = new Fl_Output(1, 1, siz * 8, siz * 10, "");
 			RW->color(58);
-			RW->textsize(18);
+			RW->textsize(siz * 6);
 			RW->textcolor(57);
 			RW->value("◂◂");
-			FF = new Fl_Output(26, 1, 26, 30, "");
+			FF = new Fl_Output(0, 1, siz * 8, siz * 10, "");
 			FF->color(58);
-			FF->textsize(18);
+			FF->textsize(siz * 6);
 			FF->textcolor(57);
 			FF->value("▸▸");
-			Stop = new Fl_Output(52, 1, 26, 30, "");
+			Stop = new Fl_Output(0, 1, siz * 8, siz * 10, "");
 			Stop->color(58);
-			Stop->textsize(18);
+			Stop->textsize(siz * 6);
 			Stop->textcolor(57);
 			Stop->value("■");
-			Play = new Fl_Output(80, 1, 26, 30, "");
+			Play = new Fl_Output(0, 1, siz * 8, siz * 10, "");
 			Play->color(58);
-			Play->textsize(18);
+			Play->textsize(siz * 6);
 			Play->textcolor(57);
 			Play->value("▶");
-			Rec = new Fl_Output(106, 1, 26, 30, "");
+			Rec = new Fl_Output(0, 1, siz * 8, siz * 10, "");
 			Rec->color(105);
-			Rec->textsize(16);
+			Rec->textsize(siz * 5);
 			Rec->textcolor(106);
 			Rec->value("⬤");
-			Solo = new Fl_Output(130, 1, 50, 30, "");
+			Solo = new Fl_Output(0, 1, siz * 17, siz * 10, "");
 			Solo->color(105);
-			Solo->textsize(19);
+			Solo->textsize(siz * 6);
 			Solo->textcolor(106);
 			Solo->value("Solo");
-			Assign = new Fl_Output(130, 1, 114, 30, "");
+			Assign = new Fl_Output(0, 1, siz * 38, siz * 10, "");
 			Assign->color(58);
-			Assign->textsize(19);
+			Assign->textsize(siz * 6);
 			Assign->textcolor(61);
 			Assign->value("");
-			Flip = new Fl_Output(130, 1, 42, 30, "");
+			Flip = new Fl_Output(0, 1, siz * 14, siz * 10, "");
 			Flip->color(58);
-			Flip->textsize(19);
+			Flip->textsize(siz * 6);
 			Flip->textcolor(57);
 			Flip->value("Flip");
-			View = new Fl_Output(130, 1, 54, 30, "");
+			View = new Fl_Output(0, 1, siz * 17, siz * 10, "");
 			View->color(58);
-			View->textsize(19);
+			View->textsize(siz * 6);
 			View->textcolor(57);
 			View->value("View");
 		end();
@@ -422,6 +442,7 @@ static int usage() {
 	"        -h, --help              Show this help text\n"
 	"        -m, --master            Show master portion of display\n"
 	"        -t, --time              Show Clock if master enabled\n"
+	"        -s, --small             Make it smaller\n"
 	"        -x <x>                  Place mcpdisp at x position\n"
 	"        -y <y>                  place mcpdisp at y position\n"
 	"        -V, --version           Show version information\n\n"
@@ -525,6 +546,7 @@ int main(int argc, char** argv)
 	{ "help", no_argument, 0, 'h' },
 	{ "master", no_argument, 0, 'm' },
 	{ "time", no_argument, 0, 't' },
+	{ "small", no_argument, 0, 's' },
 	{ "xpos", required_argument, 0, 'x' },
 	{ "ypos", required_argument, 0, 'y' },
 	{ "version", no_argument, 0, 'V' },
@@ -533,7 +555,7 @@ int main(int argc, char** argv)
 	while (1) {
 	int c, option_index = 0;
 
-	c = getopt_long (argc, argv, "hmtx:y:V", options, &option_index);
+	c = getopt_long (argc, argv, "hmtsx:y:V", options, &option_index);
 	if (c == -1)
 		break;
 
@@ -546,6 +568,9 @@ int main(int argc, char** argv)
 			break;
 		case 't':
 			shotime = true;
+			break;
+		case 's':
+			siz = 2;
 			break;
 		case 'x':
 			if (optarg) {
@@ -571,6 +596,9 @@ int main(int argc, char** argv)
 			return -1;
 		}
 	}
+
+	Fl_Output disp2(siz * 184, 0, siz * 20, siz * 14, "");
+	Fl_Output time1(siz * 204, 0, siz * 110,siz * 14, "");
 
 	if (help) {
 		return usage();
@@ -637,28 +665,16 @@ int main(int argc, char** argv)
 
 	// lets make a window
 	if(master) {
-		winsz = 965;
+		winsz = siz * 314;
 	} else {
-		winsz = 574;
+		winsz = siz * 184;
 	}
-	Fl_Window win (win_x, win_y, winsz, 75, wname);
+	Fl_Window win (win_x, win_y, winsz, siz * 25, wname);
 	win.callback(close_cb);
 	win.color(56);
 		win.begin();
-			win.add(line1);
-			line1.color(57);
-			line1.textfont(4);
-			line1.textcolor(181);
-			line1.textsize(16);
-			line1.value(line1_in);
-			win.add(line2);
-			line2.color(57);
-			line2.textfont(4);
-			line2.textcolor(181);
-			line2.textsize(16);
-			line2.value(line2_in);
 			for ( int x=0; x < 8; x++) {
-				Chan *led = new Chan((8 + (x * 70)), 45);
+				Chan *led = new Chan((x * siz * 23), 0);
 				chan[x] = led;
 			}
 			if(master) {
@@ -667,16 +683,16 @@ int main(int argc, char** argv)
 				disp2.color(64);
 				disp2.textfont(5);
 				disp2.textcolor(88);
-				disp2.textsize(42);
+				disp2.textsize(siz * 14 - 1);
 				disp2.value(disp2_in);
-				transport = new Transport(570, 45);
+				transport = new Transport(siz * 186, siz * 14);
 				if(shotime) {
 					// timecode/bar display
 					win.add(time1);
 					time1.color(64);
 					time1.textfont(5);
 					time1.textcolor(88);
-					time1.textsize(42);
+					time1.textsize(siz * 14 - 1);
 					time1.value(time1_in);
 				} else {
 					// stuff that only shows when time doesn't
@@ -693,7 +709,7 @@ int main(int argc, char** argv)
 		// .03 gives about the right delay for
 		// meters to go from FS to 0 in 1.8 seconds
 		// but we now count to 100 so we can run this loop more often
-		Fl::wait(.0003);
+		Fl::wait(.003);
 		// need to make sure we get all the the midi events
 		int availableMidi (1);
 		while (availableMidi) {
@@ -716,25 +732,44 @@ int main(int argc, char** argv)
 						case 0xf0:
 							if (midichunk[5] == 0x12) {
 								// display stuff (should be a function)
+								bool line1 = false;
+								bool line2 = false;
 								int offset = midichunk[6];
 								if (offset < 56) {
 									if ((bytes - 8 + offset) < 57) {
 										memcpy(&line1_in[offset], &midichunk[7], bytes - 8);
-										line1.value(line1_in);
+										line1 = true;
 									} else {
 										memcpy(&line1_in[offset], &midichunk[7], 56 - offset);
-										line1.value(line1_in);
+										line1 = true;
 										memcpy(&line2_in[0], &midichunk[7 + (55 - offset)], bytes - (56 - offset));
-										line2.value(line2_in);
+										line2 = true;
 									}
+
 								} else {
 									offset = offset - 56;
 									if ((bytes - 8 + offset) < 57) {
 										memcpy(&line2_in[offset], &midichunk[7], bytes - 8);
-										line2.value(line2_in);
+										line2 = true;
 									} else {
 										memcpy(&line2_in[offset], &midichunk[7], 56 - offset);
-										line2.value(line2_in);
+										line2 = true;
+									}
+								}
+								if (line1) {
+									for ( int x=0; x < 8; x++) {
+										char text[8];
+										memcpy (text, &line1_in[x * 7], 7);
+										text[7] = 0x00;
+										chan[x]->top(text);
+									}
+								}
+								if (line2) {
+									for ( int x=0; x < 8; x++) {
+										char text[8];
+										memcpy (text, &line2_in[x * 7], 7);
+										text[7] = 0x00;
+										chan[x]->low(text);
 									}
 								}
 							} else if (midichunk[5] == 0x10) {
