@@ -217,12 +217,14 @@ public:
 
 	// This decrements the meter to provide fall off
 	void decr (void) {
-		if (++loopcount > 10) {
-			loopcount = 0;
-			if (old_lv > 0) { old_lv--; }
-			meter->value((float) old_lv);
-			if (!old_lv) {
-				peak (false);
+		if (old_lv) {
+			if (++loopcount > 10) {
+				loopcount = 0;
+				if (old_lv > 0) { old_lv--; }
+				meter->value((float) old_lv);
+				if (!old_lv) {
+					peak (false);
+				}
 			}
 		}
 	}

@@ -3,8 +3,12 @@ mcpdisp (0.0.7) unreleased
   * Timeout Peak indication so it doesn't remain forever.
   * Fix timecode initialization bug.
   * Renamed out port to _thru to give better user info.
+  * Lowered Cpu usage.
+  * Added -s param for small display.
+  * Made size variable.
+  * Split display to per strip.
 
-  -- Len Ovens <len@ovenwerks.net> Mon Dec 28 11:46:35 2015 -0800
+  -- Len Ovens <len@ovenwerks.net> Thu Jan 28 21:25:29 2016 -0800
 
 mcpdisp (0.0.6) released
 
