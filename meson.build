@@ -15,4 +15,4 @@ install_data(['src/mcpdisp.desktop', 'src/mcpdisp-ext.desktop'],
     install_dir : get_option('datadir') / 'applications')
 
 install_data('src/mcpdisp.svg',
-    install_dir : get_option('datadir') / 'icons/hicolor/22x22/apps')
+    install_dir : get_option('datadir') / 'icons/hicolor/scalable/apps')
