@@ -10,3 +10,9 @@ executable('mcpdisp',
     dependencies: [fltkdep, jackdep],
     install: true,
     )
+
+install_data(['src/mcpdisp.desktop', 'src/mcpdisp-ext.desktop'],
+    install_dir : get_option('datadir') / 'applications')
+
+install_data('src/mcpdisp.svg',
+    install_dir : get_option('datadir') / 'icons/hicolor/22x22/apps')

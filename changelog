@@ -1,3 +1,7 @@
+mcpdisp v 0.1.0
+
+    moved to meson build system for easier distribution
+
 mcpdisp (0.0.7) unreleased
 
   * Timeout Peak indication so it doesn't remain forever.
@@ -8,9 +12,7 @@ mcpdisp (0.0.7) unreleased
   * Made size variable.
   * Split display to per strip.
 
-  -- Len Ovens <len@ovenwerks.net> Thu Jan 28 21:25:29 2016 -0800
-
-mcpdisp (0.0.6) released
+mcpdisp (0.0.6)
 
   * Added -x and -y command line arguments for window placement.
   * Updated README.md to add above change.
@@ -22,9 +24,7 @@ mcpdisp (0.0.6) released
   * Add a Thru port so only one input needs to connected to daw.
   * Release version 0.0.6
 
-  -- Len Ovens <len@ovenwerks.net> Sat Dec 26 17:04:50 2015 -0800
-
-mcpdisp (0.0.5) released
+mcpdisp (0.0.5)
 
   * Fixed INSTALL file for no mcpdisp.sh.
   * Added Assign display.
@@ -43,9 +43,7 @@ mcpdisp (0.0.5) released
   * Only update time/beats when new time/beat data comes in.
   * Release 0.0.5
 
- -- Len Ovens <len@music>  Sat Oct 24 20:09:30 2015 -0700
-
-mcpdisp (0.0.4) released
+mcpdisp (0.0.4)
 
   * Moved from c to c++ to work with GUI.
   * Cleaned up white space.
@@ -53,17 +51,13 @@ mcpdisp (0.0.4) released
   * brought GUI to current text functionality.
   * Make window name match jack port.
 
- -- Len Ovens <len@music>  Sat, 19 Sep 2015 20:50:10 -0700
-
-mcpdisp (0.0.3) released; urgency=medium
+mcpdisp (0.0.3)
 
   * Increase buffer for text x4
   * Removed buffer full warnings for now.
   * Put a description in the README file.
 
- -- Len Ovens <len@music>  Sun, 05 Jul 2015 07:20:10 -0700
-
-mcpdisp (0.0.2) RELEASED; urgency=medium
+mcpdisp (0.0.2)
 
   * Added fflush so we don't use repeating prinfs to flush
   * Added command to park cursor in lower right corner
@@ -73,10 +67,7 @@ mcpdisp (0.0.2) RELEASED; urgency=medium
   * Added changelog
   * Window close (X) closes jack port properly
 
- -- Len Ovens <len@music>  Mon, 11 May 2015 15:16:36 -0700
-
-mcpdisp (0.0.1) RELEASED; urgency=medium
+mcpdisp (0.0.1)
 
   * Initial release
 
- -- Len Ovens <len@music>  Sat, 09 May 2015 13:11:24 -0700

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Len Ovens
+ * Copyright (C) 2015 - 2020 Len Ovens
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@
 #include <FL/Fl_Pack.H>
 #include <FL/Fl_Progress.H>
 
-#define VERSION "pre-0.0.7"
+#define VERSION "0.1.0"
 
 using namespace std;
 
