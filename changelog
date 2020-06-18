@@ -1,3 +1,9 @@
+mcpdisp v 0.1.1
+
+    add a man page
+    fix licencing issues
+    add alert dialog if jack is not running
+
 mcpdisp v 0.1.0
 
     moved to meson build system for easier distribution
