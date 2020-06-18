@@ -1,0 +1,39 @@
+.TH MCPDISP 1
+.SH NAME
+mcpdisp \- provide a mackie control display panel
+.SH SYNOPSIS
+.B mcpdisp
+[\fB\-hmtsV\fR]
+[\fB\-x\fR \fIx\fR]
+[\fB\-y\fR \fIy\fR]
+.SH DESCRIPTION
+.B mcpdisp
+Mackie Control Protocol Display Program.  Mcpdisp presents a jack
+midi port that will accept mackie control protocol display messages
+that would normally appear on the surface "scribble strip" and
+displays them on the screen. The strip LEDs and meters are
+displayed as well. Mcpdisp also provides a through midi port to
+connect back to the controller. This is handy for devices such as
+the BCF2000 or midikb that have no display of their own.
+.PP
+A jack server must be running before mcpdisp is started or
+mcpdisp will fail.
+.SH OPTIONS
+.TP
+.BR \-h ", " \-\-help
+Show usage text
+.BR \-m ", " \-\-master
+Show master portion of display
+.BR \-s ", " \-\-small
+Make it smaller (for low resolution screens)
+.BR \-t ", " \-\-time
+Show Clock. This shows the time code or beats and bars information.
+(only works with master enabled)
+.BR \-V ", " \-\-version
+Show the version od mcpdisp and exit
+.BR \-x \fIX-POSITION\fR
+Number of pixels from the left to place mcpdisp
+.BR \-y \fIY-POSITION\fR
+Number of pixels from the top to place mcpdisp
+.SH AUTHOR
+Len Ovens <len at ovenwerks dot net>
