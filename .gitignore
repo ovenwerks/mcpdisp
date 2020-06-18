@@ -5,4 +5,5 @@ midikb.geany
 mcpdisp
 debian
 debian/*
-
+build
+build/*

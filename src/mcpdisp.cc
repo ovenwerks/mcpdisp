@@ -35,6 +35,7 @@
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Pack.H>
 #include <FL/Fl_Progress.H>
+#include <FL/fl_ask.H>
 
 #define VERSION "0.1.0"
 
@@ -616,9 +617,10 @@ int main(int argc, char** argv)
 		strcpy(jackname, "mcpdisp");
 	}
 
-	if ((client = jack_client_open (jackname, JackNullOption, NULL)) == 0)
+	if ((client = jack_client_open (jackname, JackNoStartServer, NULL)) == 0)
 	{
 		std::cout << "Jack server not running?" << std::endl;
+		fl_alert ("Jack server not found. Jackd must be running before starting mcpdisp.");
 		return 1;
 	}
 
