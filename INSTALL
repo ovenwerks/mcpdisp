@@ -1,16 +1,10 @@
 Instalation instructions:
 
-There is no ./configure script as this is a simple program with few
-dependencies. If your system is set up to build things at all you have
-everything needed with the exception of libjack. There is probably a package
-called libjack-dev (if you are using jackd1) or libjack-jackd2-dev (if you
-are using jackd2 or jackdbus) in your distro you will need.
+The build system is meson.
 
-Scratch that, fltk1.3 or higher is needed too. So on a debian based (Ubuntu)
-system install libfltk1.3-dev and that will grab what you need.
+This repository builds mcpdisp. Dependencies are JACK Audio Connection Kit and FLTK.
 
-So:
+meson build --prefix=/usr
+cd build && ninja
+sudo ninja install
 
-make
-
-make install (as root with su or sudo)
