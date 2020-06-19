@@ -1,9 +1,5 @@
 # files we don't want git to play with
 *~
-midikb.geany
-*.o
-mcpdisp
-debian
-debian/*
+src/*~
 build
 build/*
