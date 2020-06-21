@@ -1,6 +1,6 @@
 project('mcpdisp', 'c', 'cpp', version : '0.1.2', license : 'GPL-2+')
 
-add_project_arguments('-DVERSION="0.1.2"', '-O0', language : 'cpp')
+add_project_arguments('-DVERSION="0.1.2"', language : 'cpp')
 
 jackdep = dependency('jack')
 
@@ -9,6 +9,7 @@ fltkdep = cc.find_library('fltk', required: true)
 
 executable('mcpdisp',
     sources: ['src/mcpdisp.cc'],
+    cpp_args : '-O0',
     dependencies: [fltkdep, jackdep],
     install: true,
     )
