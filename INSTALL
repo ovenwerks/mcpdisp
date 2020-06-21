@@ -1,6 +1,7 @@
 Instalation instructions:
 
-The build system is meson.
+The build system is meson (if you do not already have meson
+and ninja installed, do that first).
 
 This repository builds mcpdisp. Dependencies are JACK Audio Connection Kit and FLTK.
 For many Linux distros this means installing libfltk1.3-dev and libjack-jackd2-dev

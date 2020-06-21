@@ -1,4 +1,6 @@
-project('mcpdisp', 'c', 'cpp', version : '0.1.0', license : 'GPL-2+')
+project('mcpdisp', 'c', 'cpp', version : '0.1.2', license : 'GPL-2+')
+
+add_project_arguments('-DVERSION="0.1.2"', '-O0', language : 'cpp')
 
 jackdep = dependency('jack')
 

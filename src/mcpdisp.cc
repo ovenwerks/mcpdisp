@@ -37,7 +37,7 @@
 #include <FL/Fl_Progress.H>
 #include <FL/fl_ask.H>
 
-#define VERSION "0.1.0"
+// #define VERSION "0.1.2"
 
 using namespace std;
 
@@ -607,7 +607,7 @@ int main(int argc, char** argv)
 		return usage();
 	}
 	if (version) {
-		printf("midikb Version %s\n\n", VERSION);
+		printf("mcpdisp Version %s\n\n", VERSION);
 		return 0;
 	}
 	if(!master) { // if we are not showing master, can't show time either
