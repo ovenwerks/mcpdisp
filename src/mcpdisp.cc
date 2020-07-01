@@ -37,10 +37,7 @@
 #include <FL/Fl_Progress.H>
 #include <FL/fl_ask.H>
 
-// #define VERSION "0.1.2"
-
 using namespace std;
-
 
 jack_client_t *client;
 
