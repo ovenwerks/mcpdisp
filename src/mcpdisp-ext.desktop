@@ -3,6 +3,7 @@ Type=Application
 Name=mcpdisp-ext
 GenericName=mcpdisp-ext
 Comment=Mackie Control Surface Emulator extender
+Comment[fr]=Émulateur de surface de contrôle Mackie
 Icon=mcpdisp
 Exec=mcpdisp
 Terminal=false
